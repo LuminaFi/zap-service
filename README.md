@@ -43,7 +43,7 @@ The service acts as a bridge that:
 ## Project Structure
 
 ```
-zap-meta-transaction-service/
+zap-service/
 ├── src/
 │   ├── config/           # Configuration
 │   ├── controllers/      # API route handlers
@@ -73,8 +73,8 @@ zap-meta-transaction-service/
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/zap-meta-transaction-service.git
-   cd zap-meta-transaction-service
+   git clone https://github.com/LuminaFi/zap-service.git
+   cd zap-service
    ```
 
 2. Install dependencies:
