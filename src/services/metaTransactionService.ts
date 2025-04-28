@@ -97,17 +97,17 @@ export class MetaTransactionService {
       console.error("Error executing meta-transaction:", error);
 
       if (
-        error.code === "UNPREDICTABLE_GAS_LIMIT" ||
-        error.code === "CALL_EXCEPTION"
+        (error as any).code === "UNPREDICTABLE_GAS_LIMIT" ||
+        (error as any).code === "CALL_EXCEPTION"
       ) {
         throw new ServiceError(
-          `Contract error: ${error.reason || "Execution reverted"}`,
+          `Contract error: ${(error as any).reason || "Execution reverted"}`,
           400
         );
       }
 
       throw new ServiceError(
-        error.message || "Failed to execute transfer",
+        (error as any).message || "Failed to execute transfer",
         500
       );
     }
@@ -139,7 +139,7 @@ export class MetaTransactionService {
       }
 
       throw new ServiceError(
-        error.message || "Failed to fetch service status",
+        (error as any).message || "Failed to fetch service status",
         500
       );
     }

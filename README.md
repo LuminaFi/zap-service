@@ -145,7 +145,9 @@ npm run dev
 
 ## API Endpoints
 
-### POST /api/meta-transfer
+### Meta-Transaction Endpoints
+
+#### POST /api/meta-transfer
 
 Execute a meta-transaction to transfer IDRX tokens to a recipient.
 
@@ -170,7 +172,7 @@ Execute a meta-transaction to transfer IDRX tokens to a recipient.
 }
 ```
 
-### GET /api/status
+#### GET /api/status
 
 Get the current service status.
 
@@ -186,7 +188,7 @@ Get the current service status.
 }
 ```
 
-### GET /api/health
+#### GET /api/health
 
 Simple health check endpoint.
 
@@ -195,5 +197,107 @@ Simple health check endpoint.
 ```json
 {
   "status": "healthy"
+}
+```
+
+### Spread Fee Endpoints
+
+#### GET /api/spread-fee/:token
+
+Calculate spread fee for a specific token based on market volatility.
+
+**Parameters:**
+
+- `token` (path): Token name or symbol (optional, defaults to 'ethereum')
+- `days` (query): Number of days for volatility calculation (1-30, optional, defaults to 1)
+
+**Example:** `/api/spread-fee/solana?days=7`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "token": "solana",
+  "volatility": 0.02456,
+  "recommendedSpreadFee": 0.01343,
+  "volatilityPercentage": "2.46%",
+  "spreadFeePercentage": "1.34%",
+  "timeframe": "7 days",
+  "timestamp": 1681234567890
+}
+```
+
+#### GET /api/market-volatility
+
+Get volatility and recommended spread fees for multiple tokens.
+
+**Parameters:**
+
+- `tokens` (query): Comma-separated list of tokens (optional, defaults to 'ethereum,solana')
+- `days` (query): Number of days for volatility calculation (1-30, optional, defaults to 1)
+
+**Example:** `/api/market-volatility?tokens=ethereum,solana,bitcoin&days=3`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "tokens": {
+    "ethereum": {
+      "token": "ethereum",
+      "volatility": 0.0189,
+      "recommendedSpreadFee": 0.01045,
+      "volatilityPercentage": "1.89%",
+      "spreadFeePercentage": "1.05%",
+      "timeframe": "3 days",
+      "timestamp": 1681234567890
+    },
+    "solana": {
+      "token": "solana",
+      "volatility": 0.0256,
+      "recommendedSpreadFee": 0.0138,
+      "volatilityPercentage": "2.56%",
+      "spreadFeePercentage": "1.38%",
+      "timeframe": "3 days",
+      "timestamp": 1681234567890
+    },
+    "bitcoin": {
+      "token": "bitcoin",
+      "volatility": 0.0142,
+      "recommendedSpreadFee": 0.0081,
+      "volatilityPercentage": "1.42%",
+      "spreadFeePercentage": "0.81%",
+      "timeframe": "3 days",
+      "timestamp": 1681234567890
+    }
+  }
+}
+```
+
+#### GET /api/average-spread-fee
+
+Calculate average volatility and recommended spread fee across multiple tokens.
+
+**Parameters:**
+
+- `tokens` (query): Comma-separated list of tokens (optional, defaults to 'ethereum,solana')
+- `days` (query): Number of days for volatility calculation (1-30, optional, defaults to 1)
+
+**Example:** `/api/average-spread-fee?tokens=ethereum,solana,bitcoin`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "tokens": ["ethereum", "solana", "bitcoin"],
+  "averageVolatility": 0.0196,
+  "recommendedSpreadFee": 0.0108,
+  "averageVolatilityPercentage": "1.96%",
+  "recommendedSpreadFeePercentage": "1.08%",
+  "timeframe": "1 day",
+  "timestamp": 1681234567890
 }
 ```
