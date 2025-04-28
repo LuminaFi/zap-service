@@ -1,13 +1,103 @@
-### Reserve Limit Endpoints
+### Transaction History Endpoints
+
+#### GET /api/transactions/:address
+
+Get transaction history for a specific address from the Blockscout API.
+
+**Parameters:**
+
+- `address` (path): Ethereum address to get transactions for
+- `page` (query): Page number for pagination (optional, defaults to 1)
+- `limit` (query): Number of transactions per page (optional, defaults to 20, max 100)
+- `filterBy` (query): Filter transactions by direction: `from`, `to`, or `all` (optional, defaults to `all`)
+- `sort` (query): Sort transactions by timestamp: `asc` or `desc` (optional, defaults to `desc`)
+- `startDate` (query): Filter transactions after this date in ISO format (optional)
+- `endDate` (query): Filter transactions before this date in ISO format (optional)
+
+**Example:** `/api/transactions/0x1234567890abcdef1234567890abcdef12345678?limit=10&filterBy=from`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "address": "0x1234567890abcdef1234567890abcdef12345678",
+  "transactions": [
+    {
+      "hash": "0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba",
+      "from": "0x1234567890abcdef1234567890abcdef12345678",
+      "to": "0xabcdef1234567890abcdef1234567890abcdef12",
+      "value": "1000000000000000000",
+      "valueInEther": "1",
+      "timestamp": 1681234567,
+      "formattedDate": "2023-04-11T12:34:56.000Z",
+      "status": "success",
+      "gasUsed": "21000",
+      "gasPrice": "5000000000",
+      "blockNumber": 12345678,
+      "isContractInteraction": false,
+      "functionName": null,
+      "methodId": null
+    }
+    // More transactions...
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 45,
+    "hasMore": true
+  },
+  "summary": {
+    "totalTransactions": 10,
+    "sentTransactions": 6,
+    "receivedTransactions": 4,
+    "totalSent": "2.5",
+    "totalReceived": "1.2",
+    "lastTransaction": "2023-04-11T12:34:56.000Z"
+  }
+}
+```
+
+#### GET /api/transaction/:txHash
+
+Get detailed information about a specific transaction.
+
+**Parameters:**
+
+- `txHash` (path): Transaction hash to look up
+
+**Example:** `/api/transaction/0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba`
+
+**Response:**
+
+````json
+{
+  "success": true,
+  "transaction": {
+    "hash": "0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba",
+    "from": "0x1234567890abcdef1234567890abcdef12345678",
+    "to": "0xabcdef1234567890abcdef1234567890abcdef12",
+    "value": "1000000000000000000",
+    "valueInEther": "1",
+    "timestamp": 1681234567,
+    "formattedDate": "2023-04-11T12:34:56.000Z",
+    "status": "success",
+    "gasUsed": "21000",
+    "gasPrice": "5000000000",
+    "blockNumber": 12345678,
+    "isContractInteraction": false,
+    "functionName": null,
+    "methodId": null
+  }
+}
+```### Reserve Limit Endpoints
 
 #### GET /api/transfer-limits
-
 Calculate recommended transfer limits based on current reserve pool size.
 
 **Example:** `/api/transfer-limits`
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -24,7 +114,7 @@ Calculate recommended transfer limits based on current reserve pool size.
     "healthDescription": "The reserve is in good condition. It can support normal operations with moderate transfer limits."
   }
 }
-```
+````
 
 #### POST /api/transfer-limits
 
