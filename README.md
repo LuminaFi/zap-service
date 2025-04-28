@@ -1,3 +1,58 @@
+### Reserve Limit Endpoints
+
+#### GET /api/transfer-limits
+
+Calculate recommended transfer limits based on current reserve pool size.
+
+**Example:** `/api/transfer-limits`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "reserve": "1000000.0",
+  "minTransferAmount": "10.0",
+  "recommendedMinAmount": "20.0",
+  "maxTransferAmount": "100000.0",
+  "recommendedMaxAmount": "20000.0",
+  "reserveUtilizationPercentage": "2.00%",
+  "healthStatus": "GOOD",
+  "recommendations": {
+    "message": "Based on the current reserve of 1000000.0 IDRX, we recommend setting transfer limits between 20.0 and 20000.0 IDRX.",
+    "healthStatus": "GOOD",
+    "healthDescription": "The reserve is in good condition. It can support normal operations with moderate transfer limits."
+  }
+}
+```
+
+#### POST /api/transfer-limits
+
+Update contract transfer limits (requires operator privileges).
+
+**Request:**
+
+```json
+{
+  "minAmount": "20.0",
+  "maxAmount": "20000.0"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Transfer limits updated successfully",
+  "transactionHash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  "updatedLimits": {
+    "minAmount": "20.0",
+    "maxAmount": "20000.0"
+  }
+}
+```
+
 ## Integration Guide
 
 To integrate this service with your frontend and blockchain monitoring system:
