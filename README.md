@@ -1,94 +1,133 @@
-# ZAP Cross-Chain Meta-Transaction Service
+# ZAP Cross-Chain Transfer Service
 
-A TypeScript-based backend service for handling cross-chain transfers between Ethereum/Solana and the Lisk network. This service allows users to transfer IDRX tokens without paying gas fees by implementing a meta-transaction pattern.
+A TypeScript-based backend service for facilitating cross-chain token transfers between Ethereum/Solana and the Lisk network. This service handles meta-transactions, fee calculations, reserve management, and transaction history tracking.
 
-## 📋 Table of Contents
+## 📑 Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
+- [Architecture](#architecture)
 - [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
+- [Setup and Installation](#setup-and-installation)
 - [API Reference](#api-reference)
   - [Meta-Transaction API](#meta-transaction-api)
-  - [Spread Fee API](#spread-fee-api)
+  - [Token Fee API](#token-fee-api)
   - [Reserve Limit API](#reserve-limit-api)
   - [Transaction History API](#transaction-history-api)
-- [Architecture](#architecture)
 - [Security Considerations](#security-considerations)
 - [Deployment](#deployment)
-- [Contributing](#contributing)
 - [License](#license)
 
-## Overview
+## 🔍 Overview
 
-The ZAP Cross-Chain Meta-Transaction Service facilitates seamless token transfers across different blockchains. It allows users to send tokens from Ethereum or Solana and receive IDRX tokens on the Lisk network without requiring users to pay gas fees in Lisk's native currency.
+The ZAP Cross-Chain Transfer Service enables seamless token transfers across different blockchains. It allows users to send tokens from Ethereum or Solana and receive IDRX tokens on the Lisk network without requiring users to pay gas fees on Lisk.
 
-The service acts as a bridge that:
-1. Executes IDRX transfers on behalf of users (meta-transactions)
-2. Calculates optimal spread fees based on market volatility
-3. Manages reserve limits based on liquidity
-4. Tracks transaction history across chains
+The service provides:
 
-## Features
+- Meta-transactions for gas-free transfers
+- Dynamic fee calculations with admin fee + spread fee
+- Automatic reserve management
+- Complete transaction history tracking
 
-- **Gas-Free Transfers**: Users don't need Lisk tokens for gas fees
-- **Dynamic Spread Fees**: Automatically adjusts fees based on market volatility
-- **Adaptive Reserve Limits**: Calculates optimal transfer limits based on reserves
-- **Transaction History**: Retrieves and displays complete transaction history
-- **Type Safety**: Built with TypeScript and comprehensive type definitions
-- **Clean Architecture**: Follows SOLID principles with separation of concerns
-- **Error Handling**: Robust error handling and validation
-- **API Documentation**: Comprehensive API documentation
+## ✨ Features
 
-## Project Structure
+- **Gas-Free Transfers**: Execute IDRX transfers on behalf of users, removing the need for them to hold Lisk's native token
+- **Dynamic Fee Calculation**: Calculate token prices, admin fees (0.5%), and volatility-based spread fees
+- **Multi-Currency Support**: Support for Ethereum, Solana, and other major cryptocurrencies
+- **Reserve Management**: Dynamically adjust transfer limits based on reserve health
+- **Transaction History**: Track and display transaction history across chains
+- **Secure Implementation**: Built with robust error handling and comprehensive validation
+- **Type-Safe**: Full TypeScript implementation with clear type definitions
+- **Clean Architecture**: Follows SOLID principles for maintainability and testability
+
+## 🏗️ Architecture
+
+The service follows a modular, layered architecture:
+
+1. **Controller Layer**: Handles HTTP requests and responses
+2. **Service Layer**: Contains business logic and integration with external services
+3. **Utility Layer**: Provides helper functions and shared tools
+4. **Middleware Layer**: Handles request validation and error processing
+
+Key architectural principles:
+
+- **Separation of Concerns**: Each component has a single responsibility
+- **Dependency Injection**: Services and controllers receive dependencies
+- **Error Handling**: Centralized, consistent error handling
+- **Stateless Design**: No reliance on server-side session state
+
+## 📁 Project Structure
 
 ```
-zap-service/
+zap-cross-chain-service/
 ├── src/
-│   ├── config/           # Configuration
-│   ├── controllers/      # API route handlers
-│   ├── middleware/       # Express middleware
-│   ├── services/         # Business logic
-│   ├── types/            # TypeScript type definitions
-│   ├── utils/            # Utility functions
-│   ├── routes/           # API routes
-│   ├── app.ts            # Express app setup
-│   └── server.ts         # Server entry point
-├── .env.example          # Example environment variables
-├── package.json          # Project dependencies
-├── tsconfig.json         # TypeScript configuration
-└── README.md             # Project documentation
+│   ├── config/                # Configuration settings
+│   │   └── config.ts          # Environment and app configuration
+│   ├── controllers/           # Request handlers
+│   │   ├── metaTransactionController.ts
+│   │   ├── tokenFeeController.ts
+│   │   ├── reserveLimitController.ts
+│   │   └── transactionHistoryController.ts
+│   ├── middleware/            # Express middleware
+│   │   ├── errorHandler.ts    # Global error handling
+│   │   └── validator.ts       # Request validation
+│   ├── services/              # Business logic
+│   │   ├── metaTransactionService.ts
+│   │   ├── tokenFeeService.ts
+│   │   ├── reserveLimitService.ts
+│   │   └── transactionHistoryService.ts
+│   ├── types/                 # TypeScript definitions
+│   │   └── index.ts
+│   ├── utils/                 # Utility functions
+│   │   └── blockchain.ts
+│   ├── routes/                # API routes
+│   │   ├── index.ts
+│   │   ├── metaTransactionRoutes.ts
+│   │   ├── tokenFeeRoutes.ts
+│   │   ├── reserveLimitRoutes.ts
+│   │   └── transactionHistoryRoutes.ts
+│   ├── app.ts                 # Express application setup
+│   └── server.ts              # Server entry point
+├── .env.example               # Environment variables template
+├── package.json               # Dependencies and scripts
+├── tsconfig.json              # TypeScript configuration
+└── README.md                  # Project documentation
 ```
 
-## Getting Started
+## 🚀 Setup and Installation
 
 ### Prerequisites
 
 - Node.js 16.x or higher
 - NPM or Yarn
 - Access to a Lisk RPC node
-- Operator wallet with sufficient funds and OPERATOR_ROLE on the contract
+- Operator wallet with OPERATOR_ROLE privileges on the IDRXTransferManager contract
 
 ### Installation
 
 1. Clone the repository:
+
    ```bash
-   git clone https://github.com/LuminaFi/zap-service.git
-   cd zap-service
+   git clone https://github.com/yourusername/zap-cross-chain-service.git
+   cd zap-cross-chain-service
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Configure environment variables:
+
    ```bash
    cp .env.example .env
    ```
+
    Edit the `.env` file with your configuration.
 
 4. Build the project:
+
    ```bash
    npm run build
    ```
@@ -98,19 +137,22 @@ zap-service/
    npm start
    ```
 
-For development:
+For development mode:
+
 ```bash
 npm run dev
 ```
 
-## API Reference
+## 📚 API Reference
 
 ### Meta-Transaction API
 
 #### POST /api/meta-transfer
+
 Execute a meta-transaction to transfer IDRX tokens to a recipient.
 
 **Request:**
+
 ```json
 {
   "recipient": "0x1234567890abcdef1234567890abcdef12345678",
@@ -119,6 +161,7 @@ Execute a meta-transaction to transfer IDRX tokens to a recipient.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -130,9 +173,11 @@ Execute a meta-transaction to transfer IDRX tokens to a recipient.
 ```
 
 #### GET /api/status
+
 Get the current service status.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -144,116 +189,234 @@ Get the current service status.
 ```
 
 #### GET /api/health
+
 Simple health check endpoint.
 
 **Response:**
+
 ```json
 {
   "status": "healthy"
 }
 ```
 
-### Spread Fee API
+### Token Fee API
 
-#### GET /api/spread-fee/:token
-Calculate spread fee for a specific token based on market volatility.
+#### GET /api/token-price/:token
+
+Get current price data for a token in USD and IDR.
 
 **Parameters:**
+
+- `token` (path): Token name or symbol (optional, defaults to 'ethereum')
+
+**Example:** `/api/token-price/solana`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "token": "solana",
+  "tokenSymbol": "SOL",
+  "priceUsd": 142.57,
+  "priceIdr": 2209835,
+  "timestamp": 1681234567890,
+  "priceIdrFormatted": "Rp 2.209.835",
+  "priceUsdFormatted": "$142.57"
+}
+```
+
+#### GET /api/calculate-fees
+
+Calculate admin fee and spread fee for a token amount.
+
+**Parameters:**
+
+- `token` (query): Token name or symbol (optional, defaults to 'ethereum')
+- `amount` (query): Amount of the token
+- `customSpreadFee` (query): Optional custom spread fee percentage (as decimal, e.g. 0.01 = 1%)
+
+**Example:** `/api/calculate-fees?token=ethereum&amount=1.5`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "result": {
+    "token": "ethereum",
+    "tokenSymbol": "ETH",
+    "priceUsd": 2835.42,
+    "priceIdr": 43949010,
+    "adminFeePercentage": 0.005,
+    "adminFeeAmount": 0.0075,
+    "spreadFeePercentage": 0.002,
+    "spreadFeeAmount": 0.003,
+    "totalFeePercentage": 0.007,
+    "totalFeeAmount": 0.0105,
+    "amountBeforeFees": 1.5,
+    "amountAfterFees": 1.4895,
+    "exchangeRate": 43949010,
+    "timestamp": 1681234567890,
+    "priceIdrFormatted": "Rp 43.949.010",
+    "priceUsdFormatted": "$2,835.42",
+    "adminFeePercentageFormatted": "0.50%",
+    "spreadFeePercentageFormatted": "0.20%",
+    "totalFeePercentageFormatted": "0.70%"
+  }
+}
+```
+
+#### GET /api/calculate-idrx
+
+Calculate IDRX amount from source token.
+
+**Parameters:**
+
+- `token` (query): Source token name or symbol (optional, defaults to 'ethereum')
+- `amount` (query): Amount of source token
+- `customSpreadFee` (query): Optional custom spread fee percentage
+
+**Example:** `/api/calculate-idrx?token=ethereum&amount=0.5`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "token": "ethereum",
+  "sourceAmount": 0.5,
+  "idrxAmount": 21829815.225,
+  "idrxAmountFormatted": "Rp 21.829.815",
+  "fees": {
+    "token": "ethereum",
+    "tokenSymbol": "ETH",
+    "priceUsd": 2835.42,
+    "priceIdr": 43949010,
+    "adminFeePercentage": 0.005,
+    "adminFeeAmount": 0.0025,
+    "spreadFeePercentage": 0.002,
+    "spreadFeeAmount": 0.001,
+    "totalFeePercentage": 0.007,
+    "totalFeeAmount": 0.0035,
+    "amountBeforeFees": 0.5,
+    "amountAfterFees": 0.4965,
+    "exchangeRate": 43949010,
+    "timestamp": 1681234567890,
+    "adminFeePercentageFormatted": "0.50%",
+    "spreadFeePercentageFormatted": "0.20%",
+    "totalFeePercentageFormatted": "0.70%"
+  }
+}
+```
+
+#### GET /api/calculate-source
+
+Calculate source token amount needed for a desired IDRX amount.
+
+**Parameters:**
+
+- `token` (query): Source token name or symbol (optional, defaults to 'ethereum')
+- `idrxAmount` (query): Desired IDRX amount
+- `customSpreadFee` (query): Optional custom spread fee percentage
+
+**Example:** `/api/calculate-source?token=ethereum&idrxAmount=10000000`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "token": "ethereum",
+  "sourceAmount": 0.2285,
+  "sourceAmountFormatted": "0.22850000 ETH",
+  "idrxAmount": 10000000,
+  "idrxAmountFormatted": "Rp 10.000.000",
+  "fees": {
+    "token": "ethereum",
+    "tokenSymbol": "ETH",
+    "priceUsd": 2835.42,
+    "priceIdr": 43949010,
+    "adminFeePercentage": 0.005,
+    "adminFeeAmount": 0.00114,
+    "spreadFeePercentage": 0.002,
+    "spreadFeeAmount": 0.00046,
+    "totalFeePercentage": 0.007,
+    "totalFeeAmount": 0.0016,
+    "amountBeforeFees": 0.2285,
+    "amountAfterFees": 0.2269,
+    "exchangeRate": 43949010,
+    "timestamp": 1681234567890,
+    "adminFeePercentageFormatted": "0.50%",
+    "spreadFeePercentageFormatted": "0.20%",
+    "totalFeePercentageFormatted": "0.70%"
+  }
+}
+```
+
+#### GET /api/volatility/:token
+
+Calculate volatility and recommended spread fee.
+
+**Parameters:**
+
 - `token` (path): Token name or symbol (optional, defaults to 'ethereum')
 - `days` (query): Number of days for volatility calculation (1-30, optional, defaults to 1)
 
-**Example:** `/api/spread-fee/solana?days=7`
+**Example:** `/api/volatility/solana?days=7`
 
 **Response:**
+
 ```json
 {
   "success": true,
   "token": "solana",
   "volatility": 0.02456,
-  "recommendedSpreadFee": 0.01343,
-  "volatilityPercentage": "2.46%",
-  "spreadFeePercentage": "1.34%",
+  "recommendedSpreadFee": 0.01428,
   "timeframe": "7 days",
-  "timestamp": 1681234567890
+  "timestamp": 1681234567890,
+  "volatilityPercentage": "2.46%",
+  "recommendedSpreadFeePercentage": "1.43%"
 }
 ```
 
-#### GET /api/market-volatility
-Get volatility and recommended spread fees for multiple tokens.
+#### GET /api/supported-tokens
 
-**Parameters:**
-- `tokens` (query): Comma-separated list of tokens (optional, defaults to 'ethereum,solana')
-- `days` (query): Number of days for volatility calculation (1-30, optional, defaults to 1)
-
-**Example:** `/api/market-volatility?tokens=ethereum,solana,bitcoin&days=3`
+Get list of supported tokens.
 
 **Response:**
+
 ```json
 {
   "success": true,
-  "tokens": {
-    "ethereum": {
-      "token": "ethereum",
-      "volatility": 0.0189,
-      "recommendedSpreadFee": 0.01045,
-      "volatilityPercentage": "1.89%",
-      "spreadFeePercentage": "1.05%",
-      "timeframe": "3 days",
-      "timestamp": 1681234567890
-    },
-    "solana": {
-      "token": "solana",
-      "volatility": 0.0256,
-      "recommendedSpreadFee": 0.0138,
-      "volatilityPercentage": "2.56%",
-      "spreadFeePercentage": "1.38%",
-      "timeframe": "3 days",
-      "timestamp": 1681234567890
-    },
-    "bitcoin": {
-      "token": "bitcoin",
-      "volatility": 0.0142,
-      "recommendedSpreadFee": 0.0081,
-      "volatilityPercentage": "1.42%",
-      "spreadFeePercentage": "0.81%",
-      "timeframe": "3 days",
-      "timestamp": 1681234567890
-    }
-  }
-}
-```
-
-#### GET /api/average-spread-fee
-Calculate average volatility and recommended spread fee across multiple tokens.
-
-**Parameters:**
-- `tokens` (query): Comma-separated list of tokens (optional, defaults to 'ethereum,solana')
-- `days` (query): Number of days for volatility calculation (1-30, optional, defaults to 1)
-
-**Example:** `/api/average-spread-fee?tokens=ethereum,solana,bitcoin`
-
-**Response:**
-```json
-{
-  "success": true,
-  "tokens": ["ethereum", "solana", "bitcoin"],
-  "averageVolatility": 0.0196,
-  "recommendedSpreadFee": 0.0108,
-  "averageVolatilityPercentage": "1.96%",
-  "recommendedSpreadFeePercentage": "1.08%",
-  "timeframe": "1 day",
-  "timestamp": 1681234567890
+  "tokens": [
+    { "id": "ethereum", "symbol": "ETH" },
+    { "id": "bitcoin", "symbol": "BTC" },
+    { "id": "solana", "symbol": "SOL" },
+    { "id": "avalanche-2", "symbol": "AVAX" },
+    { "id": "binancecoin", "symbol": "BNB" },
+    { "id": "matic-network", "symbol": "MATIC" },
+    { "id": "polkadot", "symbol": "DOT" },
+    { "id": "chainlink", "symbol": "LINK" },
+    { "id": "uniswap", "symbol": "UNI" },
+    { "id": "cardano", "symbol": "ADA" },
+    { "id": "dogecoin", "symbol": "DOGE" },
+    { "id": "shiba-inu", "symbol": "SHIB" }
+  ]
 }
 ```
 
 ### Reserve Limit API
 
 #### GET /api/transfer-limits
+
 Calculate recommended transfer limits based on current reserve pool size.
 
 **Example:** `/api/transfer-limits`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -273,9 +436,11 @@ Calculate recommended transfer limits based on current reserve pool size.
 ```
 
 #### POST /api/transfer-limits
+
 Update contract transfer limits (requires operator privileges).
 
 **Request:**
+
 ```json
 {
   "minAmount": "20.0",
@@ -284,6 +449,7 @@ Update contract transfer limits (requires operator privileges).
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -299,9 +465,11 @@ Update contract transfer limits (requires operator privileges).
 ### Transaction History API
 
 #### GET /api/transactions/:address
+
 Get transaction history for a specific address from the Blockscout API.
 
 **Parameters:**
+
 - `address` (path): Ethereum address to get transactions for
 - `page` (query): Page number for pagination (optional, defaults to 1)
 - `limit` (query): Number of transactions per page (optional, defaults to 20, max 100)
@@ -313,6 +481,7 @@ Get transaction history for a specific address from the Blockscout API.
 **Example:** `/api/transactions/0x1234567890abcdef1234567890abcdef12345678?limit=10&filterBy=from`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -333,7 +502,7 @@ Get transaction history for a specific address from the Blockscout API.
       "isContractInteraction": false,
       "functionName": null,
       "methodId": null
-    },
+    }
     // More transactions...
   ],
   "pagination": {
@@ -354,14 +523,17 @@ Get transaction history for a specific address from the Blockscout API.
 ```
 
 #### GET /api/transaction/:txHash
+
 Get detailed information about a specific transaction.
 
 **Parameters:**
+
 - `txHash` (path): Transaction hash to look up
 
 **Example:** `/api/transaction/0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -384,76 +556,63 @@ Get detailed information about a specific transaction.
 }
 ```
 
-## Architecture
-
-The service follows a clean architecture approach with four main layers:
-
-1. **API Layer**: Express routes and controllers
-2. **Service Layer**: Business logic and domain services
-3. **Utility Layer**: Helper functions and shared utilities
-4. **Configuration Layer**: Environment and app configuration
-
-Key principles:
-- **Separation of Concerns**: Each component has a single responsibility
-- **Dependency Injection**: Components receive their dependencies
-- **Error Handling**: Centralized error handling with custom error types
-- **Type Safety**: Comprehensive TypeScript definitions
-- **Middleware Pattern**: Express middleware for validation and error handling
-
-## Security Considerations
+## 🔒 Security Considerations
 
 1. **Private Key Management**
-   - Store private keys securely using environment variables
-   - Consider using a hardware wallet or secrets manager in production
-   - The operator account should have minimal privileges
+
+   - Store private keys securely using environment variables or secrets management
+   - Use hardware wallets for production environments
+   - Implement key rotation policies
 
 2. **Input Validation**
-   - All API endpoints perform thorough input validation
-   - Uses express-validator for request validation
-   - Input sanitization to prevent injection attacks
+
+   - All API endpoints include thorough input validation
+   - Prevents injection attacks and unexpected inputs
 
 3. **Rate Limiting**
-   - Implement rate limiting in production to prevent abuse
+
+   - Implement rate limiting to prevent DoS attacks
    - Consider using Redis for distributed rate limiting
 
-4. **Monitoring and Alerts**
-   - Set up logging and monitoring for suspicious activities
-   - Configure alerts for operator wallet balance thresholds
-   - Monitor for failed transactions and errors
+4. **Error Handling**
 
-## Deployment
+   - Comprehensive error handling to prevent information leakage
+   - Structured error responses for better client-side handling
+
+5. **Monitoring**
+   - Set up logging for suspicious activities
+   - Monitor wallet balances and transaction history
+   - Implement alerts for system issues
+
+## 🚢 Deployment
 
 For production deployment, consider:
 
-1. **Containerization**
-   - Use Docker to containerize the application
-   - Deploy with Kubernetes for scaling and resilience
+1. **Container Orchestration**
 
-2. **Environment Setup**
-   - Use production-grade secrets management
-   - Set up proper logging and monitoring
-   - Configure automated backups
+   - Deploy using Docker and Kubernetes
+   - Set up auto-scaling based on demand
 
-3. **CI/CD Pipeline**
-   - Implement automated testing
-   - Set up continuous deployment
-   - Configure staging environments
+2. **Environment Configuration**
 
-4. **High Availability**
-   - Deploy multiple instances
-   - Use load balancing
-   - Implement automatic failover
+   - Use environment-specific configurations
+   - Implement secrets management (HashiCorp Vault, AWS Secrets Manager, etc.)
 
-## Contributing
+3. **Monitoring and Logging**
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+   - Implement centralized logging (ELK stack, Datadog, etc.)
+   - Set up performance monitoring and alerts
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+4. **Resilience**
 
-## License
+   - Deploy across multiple availability zones
+   - Implement circuit breakers for external API calls
+   - Set up database backups and redundancy
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+5. **CI/CD**
+   - Automate testing and deployment
+   - Implement staging environments for validation
+
+## 📄 License
+
+This project is licensed under the MIT License.
