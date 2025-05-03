@@ -56,7 +56,7 @@ export const getContract = (): ethers.Contract => {
  */
 export const parseAmount = (amount: string): ethers.BigNumber => {
   try {
-    return ethers.utils.parseUnits(amount, 18);
+    return ethers.utils.parseUnits(amount, 2);
   } catch (error) {
     throw new ServiceError("Invalid amount format", 400);
   }
@@ -68,7 +68,7 @@ export const parseAmount = (amount: string): ethers.BigNumber => {
  * @returns Formatted string amount
  */
 export const formatAmount = (amount: ethers.BigNumber): string => {
-  return ethers.utils.formatUnits(amount, 18);
+  return ethers.utils.formatUnits(amount, 2);
 };
 
 /**
