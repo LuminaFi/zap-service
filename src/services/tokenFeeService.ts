@@ -75,6 +75,8 @@ export class TokenFeeService {
 
   private readonly DEFAULT_SPREAD_FEE_PERCENTAGE = 0.002;
 
+  private readonly USER_AGENT = "ZAP Cross-Chain Transfer Service/1.0";
+
   constructor() {
     this.priceCache = new Map();
     this.volatilityCache = new Map();
@@ -104,6 +106,9 @@ export class TokenFeeService {
             ids: normalizedToken,
             vs_currencies: "usd",
             include_last_updated_at: true,
+          },
+          headers: {
+            "User-Agent": this.USER_AGENT,
           },
           timeout: 10000,
         }
@@ -363,6 +368,9 @@ export class TokenFeeService {
             ids: "tether",
             vs_currencies: "idr",
           },
+          headers: {
+            "User-Agent": this.USER_AGENT,
+          },
           timeout: 10000,
         }
       );
@@ -510,6 +518,9 @@ export class TokenFeeService {
           params: {
             vs_currency: "usd",
             days: days.toString(),
+          },
+          headers: {
+            "User-Agent": this.USER_AGENT,
           },
           timeout: 10000,
         }
