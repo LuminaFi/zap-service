@@ -5,6 +5,7 @@ import routes from "./routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { initializeBlockchain } from "./utils/blockchain";
 import config from "./config/config";
+import { setupSwagger } from "./swagger";
 
 /**
  * Express app setup
@@ -20,7 +21,11 @@ const createApp = (): Express => {
   app.use(cors());
   app.use(express.json());
 
+  // Initialize API routes
   app.use(routes);
+
+  // Setup Swagger documentation
+  setupSwagger(app);
 
   app.use(errorHandler);
 
