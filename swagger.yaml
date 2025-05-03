@@ -1,137 +1,94 @@
 openapi: 3.0.0
 info:
-  title: ZAP Cross-Chain Transfer Service API
-  description: API for facilitating cross-chain token transfers between Ethereum/Solana and the Lisk network
+  title: ZAP Cross-Chain Transfer API
+  description: |-
+    API for ZAP Cross-Chain Token Transfer Service that enables transferring tokens
+    from Ethereum, BNB Chain, and Polygon networks to IDRX on Lisk blockchain.
   version: 1.0.0
   contact:
     name: ZAP Development Team
 servers:
-  - url: https://zap-service-jkce.onrender.com
+  - url: https://zap-service-jkce.onrender.com/api
     description: Development server
-  - url: http://localhost:3000
+  - url: http://localhost:3000/api
     description: Local server
 
 tags:
   - name: Meta-Transaction
-    description: Meta-transaction operations for transferring IDRX tokens
+    description: Meta-transaction operations for gas-free transfers
   - name: Token Fee
-    description: Operations for calculating fees and token prices
+    description: Token fee calculations and price data
   - name: Reserve Limit
-    description: Operations for managing transfer limits based on reserve size
+    description: Reserve pool and transfer limits
   - name: Transaction History
-    description: Operations for retrieving transaction history
+    description: Transaction history tracking
   - name: IDRX Balance
-    description: Operations for checking IDRX token balances
+    description: IDRX token balance operations
+  - name: Network
+    description: Network and token information
 
 paths:
-  /api/meta-transfer:
+  /meta-transfer:
     post:
       tags:
         - Meta-Transaction
-      summary: Execute a meta-transaction to transfer IDRX tokens
-      description: Transfer IDRX tokens to a recipient without them needing to pay gas fees
-      operationId: executeTransfer
+      summary: Execute IDRX token transfer meta-transaction
+      description: Execute a meta-transaction to transfer IDRX tokens to a recipient
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - recipient
-                - idrxAmount
-              properties:
-                recipient:
-                  type: string
-                  description: Ethereum-compatible address of the recipient
-                  example: "0x1234567890abcdef1234567890abcdef12345678"
-                idrxAmount:
-                  type: string
-                  description: Amount of IDRX tokens to transfer
-                  example: "1000.0"
+              $ref: "#/components/schemas/MetaTransferRequest"
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  transferId:
-                    type: string
-                    example: "0x8d7f6a56c76d6a6d7a6d8c7d8a7d6a8d7f6a5d6a7d6a8d7f6a5d6a7d6a8d7f"
-                  recipient:
-                    type: string
-                    example: "0x1234567890abcdef1234567890abcdef12345678"
-                  amount:
-                    type: string
-                    example: "1000.0"
-                  transactionHash:
-                    type: string
-                    example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+                $ref: "#/components/schemas/MetaTransferResponse"
         "400":
-          description: Bad request
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/status:
+  /status:
     get:
       tags:
         - Meta-Transaction
       summary: Get service status
-      description: Retrieve current status of the transfer service
-      operationId: getServiceStatus
+      description: Get current service status, reserve, and transfer limits
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  isActive:
-                    type: boolean
-                    example: true
-                  reserve:
-                    type: string
-                    example: "1000000.0"
-                  minTransferAmount:
-                    type: string
-                    example: "10.0"
-                  maxTransferAmount:
-                    type: string
-                    example: "100000.0"
+                $ref: "#/components/schemas/StatusResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/health:
+  /health:
     get:
       tags:
         - Meta-Transaction
-      summary: Service health check
+      summary: Health check
       description: Simple health check endpoint
-      operationId: healthCheck
       responses:
         "200":
-          description: Successful operation
+          description: Service is healthy
           content:
             application/json:
               schema:
@@ -141,57 +98,27 @@ paths:
                     type: string
                     example: "healthy"
 
-  /api/token-price/{token}:
+  /token-price/{token}:
     get:
       tags:
         - Token Fee
-      summary: Get token price data
-      description: Retrieve current price data for a token in USD and IDR
-      operationId: getTokenPrice
+      summary: Get token price
+      description: Get current price for a token in USD and IDR
       parameters:
         - name: token
           in: path
-          description: Token name or symbol (optional, defaults to 'ethereum')
+          description: Token symbol (eth, sol, etc.)
           required: false
           schema:
             type: string
-            default: ethereum
-            example: solana
+            default: eth
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  token:
-                    type: string
-                    example: "solana"
-                  tokenSymbol:
-                    type: string
-                    example: "SOL"
-                  priceUsd:
-                    type: number
-                    format: double
-                    example: 142.57
-                  priceIdr:
-                    type: number
-                    format: double
-                    example: 2209835
-                  timestamp:
-                    type: integer
-                    format: int64
-                    example: 1681234567890
-                  priceIdrFormatted:
-                    type: string
-                    example: "Rp 2.209.835"
-                  priceUsdFormatted:
-                    type: string
-                    example: "$142.57"
+                $ref: "#/components/schemas/TokenPriceResponse"
         "404":
           description: Token not found
           content:
@@ -199,388 +126,293 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/calculate-fees:
+  /calculate-fees:
     get:
       tags:
         - Token Fee
-      summary: Calculate admin fee and spread fee
+      summary: Calculate fees
       description: Calculate admin fee and spread fee for a token amount
-      operationId: calculateFees
       parameters:
         - name: token
           in: query
-          description: Token name or symbol (optional, defaults to 'ethereum')
+          description: Token symbol (eth, sol, etc.)
           required: false
           schema:
             type: string
-            default: ethereum
-            example: ethereum
+            default: eth
         - name: amount
           in: query
-          description: Amount of the token
+          description: Amount of token
           required: true
           schema:
             type: number
-            format: double
-            example: 1.5
+            format: float
+            minimum: 0.000001
         - name: customSpreadFee
           in: query
-          description: Optional custom spread fee percentage (as decimal, e.g. 0.01 = 1%)
+          description: Custom spread fee percentage (as decimal, e.g., 0.01 = 1%)
           required: false
           schema:
             type: number
-            format: double
-            example: 0.01
+            format: float
+            minimum: 0
+            maximum: 0.1
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  result:
-                    $ref: "#/components/schemas/FeeCalculationResult"
+                $ref: "#/components/schemas/CalculateFeesResponse"
         "400":
-          description: Bad request
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/calculate-idrx:
+  /calculate-idrx:
     get:
       tags:
         - Token Fee
-      summary: Calculate IDRX amount from source token
-      description: Calculate IDRX amount based on source token amount
-      operationId: calculateIdrxAmount
+      summary: Calculate IDRX amount
+      description: Calculate IDRX amount from source token amount
       parameters:
         - name: token
           in: query
-          description: Source token name or symbol (optional, defaults to 'ethereum')
+          description: Source token symbol (eth, sol, etc.)
           required: false
           schema:
             type: string
-            default: ethereum
-            example: ethereum
+            default: eth
         - name: amount
           in: query
           description: Amount of source token
           required: true
           schema:
             type: number
-            format: double
-            example: 0.5
+            format: float
+            minimum: 0.000001
         - name: customSpreadFee
           in: query
-          description: Optional custom spread fee percentage
+          description: Custom spread fee percentage (as decimal, e.g., 0.01 = 1%)
           required: false
           schema:
             type: number
-            format: double
-            example: 0.01
+            format: float
+            minimum: 0
+            maximum: 0.1
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  token:
-                    type: string
-                    example: "ethereum"
-                  sourceAmount:
-                    type: number
-                    format: double
-                    example: 0.5
-                  idrxAmount:
-                    type: number
-                    format: double
-                    example: 21829815.225
-                  idrxAmountFormatted:
-                    type: string
-                    example: "Rp 21.829.815"
-                  fees:
-                    $ref: "#/components/schemas/FeeCalculationResult"
+                $ref: "#/components/schemas/CalculateIdrxResponse"
         "400":
-          description: Bad request
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/calculate-source:
+  /calculate-source:
     get:
       tags:
         - Token Fee
-      summary: Calculate source token amount for IDRX
+      summary: Calculate source amount
       description: Calculate source token amount needed for a desired IDRX amount
-      operationId: calculateSourceAmount
       parameters:
         - name: token
           in: query
-          description: Source token name or symbol (optional, defaults to 'ethereum')
+          description: Source token symbol (eth, sol, etc.)
           required: false
           schema:
             type: string
-            default: ethereum
-            example: ethereum
+            default: eth
         - name: idrxAmount
           in: query
           description: Desired IDRX amount
           required: true
           schema:
             type: number
-            format: double
-            example: 10000000
+            format: float
+            minimum: 1
         - name: customSpreadFee
           in: query
-          description: Optional custom spread fee percentage
+          description: Custom spread fee percentage (as decimal, e.g., 0.01 = 1%)
           required: false
           schema:
             type: number
-            format: double
-            example: 0.01
+            format: float
+            minimum: 0
+            maximum: 0.1
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  token:
-                    type: string
-                    example: "ethereum"
-                  sourceAmount:
-                    type: number
-                    format: double
-                    example: 0.2285
-                  sourceAmountFormatted:
-                    type: string
-                    example: "0.22850000 ETH"
-                  idrxAmount:
-                    type: number
-                    format: double
-                    example: 10000000
-                  idrxAmountFormatted:
-                    type: string
-                    example: "Rp 10.000.000"
-                  fees:
-                    $ref: "#/components/schemas/FeeCalculationResult"
+                $ref: "#/components/schemas/CalculateSourceResponse"
         "400":
-          description: Bad request
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/volatility/{token}:
+  /volatility/{token}:
     get:
       tags:
         - Token Fee
-      summary: Calculate volatility and recommended spread fee
-      description: Calculate volatility and recommended spread fee for a token
-      operationId: calculateVolatility
+      summary: Calculate volatility
+      description: Calculate token market volatility and recommended spread fee
       parameters:
         - name: token
           in: path
-          description: Token name or symbol (optional, defaults to 'ethereum')
+          description: Token symbol (eth, sol, etc.)
           required: false
           schema:
             type: string
-            default: ethereum
-            example: solana
+            default: eth
         - name: days
           in: query
-          description: Number of days for volatility calculation (1-30, optional, defaults to 1)
+          description: Number of days for volatility calculation
           required: false
           schema:
             type: integer
             minimum: 1
             maximum: 30
             default: 1
-            example: 7
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  token:
-                    type: string
-                    example: "solana"
-                  volatility:
-                    type: number
-                    format: double
-                    example: 0.02456
-                  recommendedSpreadFee:
-                    type: number
-                    format: double
-                    example: 0.01428
-                  timeframe:
-                    type: string
-                    example: "7 days"
-                  timestamp:
-                    type: integer
-                    format: int64
-                    example: 1681234567890
-                  volatilityPercentage:
-                    type: string
-                    example: "2.46%"
-                  recommendedSpreadFeePercentage:
-                    type: string
-                    example: "1.43%"
+                $ref: "#/components/schemas/VolatilityResponse"
         "400":
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Token not found
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/supported-tokens:
+  /supported-tokens:
     get:
       tags:
         - Token Fee
-      summary: Get list of supported tokens
-      description: Retrieve a list of all supported tokens with their symbols
-      operationId: getSupportedTokens
+      summary: Get supported tokens
+      description: Get list of all supported tokens
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  tokens:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          example: "ethereum"
-                        symbol:
-                          type: string
-                          example: "ETH"
-        "500":
-          description: Internal server error
+                $ref: "#/components/schemas/SupportedTokensResponse"
+
+  /tokens-by-network:
+    get:
+      tags:
+        - Network
+      summary: Get tokens by network
+      description: Get supported tokens grouped by network
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokensByNetworkResponse"
+
+  /supported-networks:
+    get:
+      tags:
+        - Network
+      summary: Get supported networks
+      description: Get list of supported blockchain networks
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportedNetworksResponse"
+
+  /network/{network}/tokens:
+    get:
+      tags:
+        - Network
+      summary: Get network tokens
+      description: Get supported tokens for a specific network
+      parameters:
+        - name: network
+          in: path
+          description: Network ID (ethereum, bsc, polygon)
+          required: true
+          schema:
+            type: string
+            enum: [ethereum, bsc, polygon]
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetworkTokensResponse"
+        "400":
+          description: Invalid network
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/transfer-limits:
+  /transfer-limits:
     get:
       tags:
         - Reserve Limit
-      summary: Calculate transfer limits based on reserve
-      description: Calculate recommended transfer limits based on current reserve pool size
-      operationId: calculateTransferLimits
+      summary: Calculate transfer limits
+      description: Calculate transfer limits based on reserve pool
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  reserve:
-                    type: string
-                    example: "1000000.0"
-                  minTransferAmount:
-                    type: string
-                    example: "10.0"
-                  recommendedMinAmount:
-                    type: string
-                    example: "20.0"
-                  maxTransferAmount:
-                    type: string
-                    example: "100000.0"
-                  recommendedMaxAmount:
-                    type: string
-                    example: "20000.0"
-                  reserveUtilizationPercentage:
-                    type: string
-                    example: "2.00%"
-                  healthStatus:
-                    type: string
-                    enum: [EXCELLENT, GOOD, MODERATE, LOW, CRITICAL]
-                    example: "GOOD"
-                  recommendations:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: "Based on the current reserve of 1000000.0 IDRX, we recommend setting transfer limits between 20.0 and 20000.0 IDRX."
-                      healthStatus:
-                        type: string
-                        enum: [EXCELLENT, GOOD, MODERATE, LOW, CRITICAL]
-                        example: "GOOD"
-                      healthDescription:
-                        type: string
-                        example: "The reserve is in good condition. It can support normal operations with moderate transfer limits."
+                $ref: "#/components/schemas/TransferLimitsResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
@@ -588,134 +420,94 @@ paths:
     post:
       tags:
         - Reserve Limit
-      summary: Update contract transfer limits
-      description: Update minimum and maximum transfer limits in the contract (requires operator privileges)
-      operationId: updateTransferLimits
+      summary: Update transfer limits
+      description: Update contract transfer limits (requires admin privileges)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - minAmount
-                - maxAmount
-              properties:
-                minAmount:
-                  type: string
-                  description: Minimum transfer amount in IDRX
-                  example: "20.0"
-                maxAmount:
-                  type: string
-                  description: Maximum transfer amount in IDRX
-                  example: "20000.0"
+              $ref: "#/components/schemas/UpdateTransferLimitsRequest"
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Transfer limits updated successfully"
-                  transactionHash:
-                    type: string
-                    example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-                  updatedLimits:
-                    type: object
-                    properties:
-                      minAmount:
-                        type: string
-                        example: "20.0"
-                      maxAmount:
-                        type: string
-                        example: "20000.0"
+                $ref: "#/components/schemas/UpdateTransferLimitsResponse"
         "400":
-          description: Bad request
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/transactions/{address}:
+  /transactions/{address}:
     get:
       tags:
         - Transaction History
-      summary: Get transaction history for an address
-      description: Retrieve transaction history for a specific address from the Blockscout API
-      operationId: getTransactionHistory
+      summary: Get transaction history
+      description: Get transaction history for an address
       parameters:
         - name: address
           in: path
-          description: Ethereum address to get transactions for
+          description: Ethereum-compatible address
           required: true
           schema:
             type: string
-            example: "0x1234567890abcdef1234567890abcdef12345678"
         - name: page
           in: query
-          description: Page number for pagination (optional, defaults to 1)
+          description: Page number
           required: false
           schema:
             type: integer
             minimum: 1
             default: 1
-            example: 1
         - name: limit
           in: query
-          description: Number of transactions per page (optional, defaults to 20, max 100)
+          description: Number of transactions per page
           required: false
           schema:
             type: integer
             minimum: 1
             maximum: 100
             default: 20
-            example: 10
         - name: filterBy
           in: query
-          description: Filter transactions by direction (optional, defaults to 'all')
+          description: Filter transactions by direction
           required: false
           schema:
             type: string
             enum: [from, to, all]
             default: all
-            example: from
         - name: sort
           in: query
-          description: Sort transactions by timestamp (optional, defaults to 'desc')
+          description: Sort order
           required: false
           schema:
             type: string
             enum: [asc, desc]
             default: desc
-            example: desc
         - name: startDate
           in: query
-          description: Filter transactions after this date in ISO format (optional)
+          description: Start date in ISO format
           required: false
           schema:
             type: string
             format: date-time
-            example: "2023-01-01T00:00:00Z"
         - name: endDate
           in: query
-          description: Filter transactions before this date in ISO format (optional)
+          description: End date in ISO format
           required: false
           schema:
             type: string
             format: date-time
-            example: "2023-04-30T23:59:59Z"
       responses:
         "200":
           description: Successful operation
@@ -724,52 +516,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/TransactionHistoryResponse"
         "400":
-          description: Bad request
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/transaction/{txHash}:
+  /transaction/{txHash}:
     get:
       tags:
         - Transaction History
-      summary: Get transaction details by hash
-      description: Retrieve detailed information about a specific transaction
-      operationId: getTransactionByHash
+      summary: Get transaction details
+      description: Get transaction details by hash
       parameters:
         - name: txHash
           in: path
-          description: Transaction hash to look up
+          description: Transaction hash
           required: true
           schema:
             type: string
-            example: "0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba"
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  transaction:
-                    $ref: "#/components/schemas/ParsedTransaction"
-        "400":
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/TransactionResponse"
         "404":
           description: Transaction not found
           content:
@@ -777,105 +555,60 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/idrx-balance/{address}:
+  /idrx-balance/{address}:
     get:
       tags:
         - IDRX Balance
-      summary: Get IDRX token balance for an address
-      description: Retrieve IDRX token balance for a specific address on the Lisk network
-      operationId: getBalance
+      summary: Get IDRX balance
+      description: Get IDRX token balance for an address
       parameters:
         - name: address
           in: path
-          description: Ethereum-compatible address to check balance for
+          description: Ethereum-compatible address
           required: true
           schema:
             type: string
-            example: "0x1234567890abcdef1234567890abcdef12345678"
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  address:
-                    type: string
-                    example: "0x1234567890abcdef1234567890abcdef12345678"
-                  balance:
-                    type: string
-                    example: "1000000000000000000000"
-                  formattedBalance:
-                    type: string
-                    example: "1000.0"
-                  tokenSymbol:
-                    type: string
-                    example: "IDRX"
-                  tokenAddress:
-                    type: string
-                    example: "0x0123456789abcdef0123456789abcdef01234568"
-                  timestamp:
-                    type: integer
-                    format: int64
-                    example: 1681234567890
-                  idrBalanceFormatted:
-                    type: string
-                    example: "Rp 1.000"
+                $ref: "#/components/schemas/BalanceResponse"
         "400":
-          description: Bad request
+          description: Invalid address
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/idrx-token-info:
+  /idrx-token-info:
     get:
       tags:
         - IDRX Balance
-      summary: Get IDRX token information
-      description: Retrieve information about the IDRX token including name, symbol, and decimals
-      operationId: getTokenInfo
+      summary: Get IDRX token info
+      description: Get IDRX token information (name, symbol, decimals)
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  name:
-                    type: string
-                    example: "Indonesian Rupiah Stablecoin"
-                  symbol:
-                    type: string
-                    example: "IDRX"
-                  address:
-                    type: string
-                    example: "0x0123456789abcdef0123456789abcdef01234568"
-                  decimals:
-                    type: integer
-                    example: 18
+                $ref: "#/components/schemas/TokenInfoResponse"
         "500":
-          description: Internal server error
+          description: Server error
           content:
             application/json:
               schema:
@@ -883,137 +616,706 @@ paths:
 
 components:
   schemas:
-    ErrorResponse:
+    MetaTransferRequest:
+      type: object
+      required:
+        - recipient
+        - idrxAmount
+      properties:
+        recipient:
+          type: string
+          description: Recipient address
+          example: "0x1234567890abcdef1234567890abcdef12345678"
+        idrxAmount:
+          type: string
+          description: IDRX amount to transfer
+          example: "1000.0"
+
+    MetaTransferResponse:
       type: object
       properties:
         success:
           type: boolean
-          example: false
-        error:
+          example: true
+        transferId:
           type: string
-          example: "Invalid recipient address"
+          description: Unique transfer identifier
+          example: "0x8d7f6a56c76d6a6d7a6d8c7d8a7d6a8d7f6a5d6a7d6a8d7f6a5d6a7d6a8d7f"
+        recipient:
+          type: string
+          description: Recipient address
+          example: "0x1234567890abcdef1234567890abcdef12345678"
+        amount:
+          type: string
+          description: IDRX amount
+          example: "1000.0"
+        transactionHash:
+          type: string
+          description: Transaction hash
+          example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
-    FeeCalculationResult:
+    StatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        isActive:
+          type: boolean
+          description: Whether the service is active
+          example: true
+        reserve:
+          type: string
+          description: Current IDRX reserve
+          example: "1000000.0"
+        minTransferAmount:
+          type: string
+          description: Minimum transfer amount
+          example: "10.0"
+        maxTransferAmount:
+          type: string
+          description: Maximum transfer amount
+          example: "100000.0"
+
+    TokenPriceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        token:
+          type: string
+          description: Token ID
+          example: "ethereum"
+        tokenSymbol:
+          type: string
+          description: Token symbol
+          example: "ETH"
+        logoUrl:
+          type: string
+          description: Token logo URL
+          example: "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+        priceUsd:
+          type: number
+          format: float
+          description: Token price in USD
+          example: 2835.42
+        priceIdr:
+          type: number
+          format: float
+          description: Token price in IDR
+          example: 43949010
+        priceUsdFormatted:
+          type: string
+          description: Formatted USD price
+          example: "$2,835.42"
+        priceIdrFormatted:
+          type: string
+          description: Formatted IDR price
+          example: "Rp 43.949.010"
+        timestamp:
+          type: integer
+          format: int64
+          description: Price timestamp
+          example: 1681234567890
+
+    CalculateFeesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        result:
+          type: object
+          properties:
+            token:
+              type: string
+              description: Token ID
+              example: "ethereum"
+            tokenSymbol:
+              type: string
+              description: Token symbol
+              example: "ETH"
+            logoUrl:
+              type: string
+              description: Token logo URL
+              example: "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+            priceUsd:
+              type: number
+              format: float
+              description: Token price in USD
+              example: 2835.42
+            priceIdr:
+              type: number
+              format: float
+              description: Token price in IDR
+              example: 43949010
+            priceUsdFormatted:
+              type: string
+              description: Formatted USD price
+              example: "$2,835.42"
+            priceIdrFormatted:
+              type: string
+              description: Formatted IDR price
+              example: "Rp 43.949.010"
+            adminFeePercentage:
+              type: number
+              format: float
+              description: Admin fee percentage
+              example: 0.005
+            adminFeeAmount:
+              type: number
+              format: float
+              description: Admin fee amount
+              example: 0.0075
+            adminFeePercentageFormatted:
+              type: string
+              description: Formatted admin fee percentage
+              example: "0.50%"
+            spreadFeePercentage:
+              type: number
+              format: float
+              description: Spread fee percentage
+              example: 0.002
+            spreadFeeAmount:
+              type: number
+              format: float
+              description: Spread fee amount
+              example: 0.003
+            spreadFeePercentageFormatted:
+              type: string
+              description: Formatted spread fee percentage
+              example: "0.20%"
+            totalFeePercentage:
+              type: number
+              format: float
+              description: Total fee percentage
+              example: 0.007
+            totalFeeAmount:
+              type: number
+              format: float
+              description: Total fee amount
+              example: 0.0105
+            totalFeePercentageFormatted:
+              type: string
+              description: Formatted total fee percentage
+              example: "0.70%"
+            amountBeforeFees:
+              type: number
+              format: float
+              description: Amount before fees
+              example: 1.5
+            amountAfterFees:
+              type: number
+              format: float
+              description: Amount after fees
+              example: 1.4895
+            exchangeRate:
+              type: number
+              format: float
+              description: Exchange rate
+              example: 43949010
+            timestamp:
+              type: integer
+              format: int64
+              description: Calculation timestamp
+              example: 1681234567890
+
+    CalculateIdrxResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        token:
+          type: string
+          description: Source token
+          example: "ethereum"
+        sourceAmount:
+          type: number
+          format: float
+          description: Source token amount
+          example: 0.5
+        idrxAmount:
+          type: number
+          format: float
+          description: Calculated IDRX amount
+          example: 21829815.225
+        idrxAmountFormatted:
+          type: string
+          description: Formatted IDRX amount
+          example: "Rp 21.829.815"
+        logoUrl:
+          type: string
+          description: Token logo URL
+          example: "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+        fees:
+          $ref: "#/components/schemas/FeeDetails"
+
+    CalculateSourceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        token:
+          type: string
+          description: Source token
+          example: "ethereum"
+        sourceAmount:
+          type: number
+          format: float
+          description: Calculated source token amount
+          example: 0.2285
+        sourceAmountFormatted:
+          type: string
+          description: Formatted source amount
+          example: "0.22850000 ETH"
+        idrxAmount:
+          type: number
+          format: float
+          description: Desired IDRX amount
+          example: 10000000
+        idrxAmountFormatted:
+          type: string
+          description: Formatted IDRX amount
+          example: "Rp 10.000.000"
+        logoUrl:
+          type: string
+          description: Token logo URL
+          example: "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+        fees:
+          $ref: "#/components/schemas/FeeDetails"
+
+    FeeDetails:
       type: object
       properties:
         token:
           type: string
+          description: Token ID
           example: "ethereum"
         tokenSymbol:
           type: string
+          description: Token symbol
           example: "ETH"
         priceUsd:
           type: number
-          format: double
+          format: float
+          description: Token price in USD
           example: 2835.42
         priceIdr:
           type: number
-          format: double
+          format: float
+          description: Token price in IDR
           example: 43949010
         adminFeePercentage:
           type: number
-          format: double
+          format: float
+          description: Admin fee percentage
           example: 0.005
         adminFeeAmount:
           type: number
-          format: double
-          example: 0.0075
+          format: float
+          description: Admin fee amount
+          example: 0.00114
+        adminFeePercentageFormatted:
+          type: string
+          description: Formatted admin fee percentage
+          example: "0.50%"
         spreadFeePercentage:
           type: number
-          format: double
+          format: float
+          description: Spread fee percentage
           example: 0.002
         spreadFeeAmount:
           type: number
-          format: double
-          example: 0.003
+          format: float
+          description: Spread fee amount
+          example: 0.00046
+        spreadFeePercentageFormatted:
+          type: string
+          description: Formatted spread fee percentage
+          example: "0.20%"
         totalFeePercentage:
           type: number
-          format: double
+          format: float
+          description: Total fee percentage
           example: 0.007
         totalFeeAmount:
           type: number
-          format: double
-          example: 0.0105
+          format: float
+          description: Total fee amount
+          example: 0.0016
+        totalFeePercentageFormatted:
+          type: string
+          description: Formatted total fee percentage
+          example: "0.70%"
         amountBeforeFees:
           type: number
-          format: double
-          example: 1.5
+          format: float
+          description: Amount before fees
+          example: 0.2285
         amountAfterFees:
           type: number
-          format: double
-          example: 1.4895
+          format: float
+          description: Amount after fees
+          example: 0.2269
         exchangeRate:
           type: number
-          format: double
+          format: float
+          description: Exchange rate
           example: 43949010
         timestamp:
           type: integer
           format: int64
+          description: Calculation timestamp
           example: 1681234567890
-        priceIdrFormatted:
-          type: string
-          example: "Rp 43.949.010"
-        priceUsdFormatted:
-          type: string
-          example: "$2,835.42"
-        adminFeePercentageFormatted:
-          type: string
-          example: "0.50%"
-        spreadFeePercentageFormatted:
-          type: string
-          example: "0.20%"
-        totalFeePercentageFormatted:
-          type: string
-          example: "0.70%"
 
-    ParsedTransaction:
+    VolatilityResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        token:
+          type: string
+          description: Token ID
+          example: "solana"
+        volatility:
+          type: number
+          format: float
+          description: Calculated volatility
+          example: 0.02456
+        volatilityPercentage:
+          type: string
+          description: Formatted volatility percentage
+          example: "2.46%"
+        recommendedSpreadFee:
+          type: number
+          format: float
+          description: Recommended spread fee
+          example: 0.01428
+        recommendedSpreadFeePercentage:
+          type: string
+          description: Formatted recommended spread fee percentage
+          example: "1.43%"
+        timeframe:
+          type: string
+          description: Volatility calculation timeframe
+          example: "7 days"
+        logoUrl:
+          type: string
+          description: Token logo URL
+          example: "https://cryptologos.cc/logos/solana-sol-logo.png"
+        timestamp:
+          type: integer
+          format: int64
+          description: Calculation timestamp
+          example: 1681234567890
+
+    SupportedTokensResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        tokens:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Token ID
+                example: "ethereum"
+              symbol:
+                type: string
+                description: Token symbol
+                example: "ETH"
+              logoUrl:
+                type: string
+                description: Token logo URL
+                example: "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+
+    TokensByNetworkResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        networks:
+          type: array
+          items:
+            type: object
+            properties:
+              network:
+                type: string
+                description: Network ID
+                example: "ethereum"
+              networkName:
+                type: string
+                description: Network name
+                example: "Ethereum"
+              logoUrl:
+                type: string
+                description: Network logo URL
+                example: "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+              tokens:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    symbol:
+                      type: string
+                      description: Token symbol
+                      example: "ETH"
+                    name:
+                      type: string
+                      description: Token name
+                      example: "Ethereum"
+                    logoUrl:
+                      type: string
+                      description: Token logo URL
+                      example: "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+
+    SupportedNetworksResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        networks:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Network ID
+                example: "ethereum"
+              name:
+                type: string
+                description: Network name
+                example: "Ethereum"
+              logoUrl:
+                type: string
+                description: Network logo URL
+                example: "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+              mainnetChainId:
+                type: integer
+                description: Mainnet Chain ID
+                example: 1
+              testnetChainId:
+                type: integer
+                description: Testnet Chain ID
+                example: 11155111
+              nativeCurrency:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: Native currency name
+                    example: "Ether"
+                  symbol:
+                    type: string
+                    description: Native currency symbol
+                    example: "ETH"
+                  decimals:
+                    type: integer
+                    description: Native currency decimals
+                    example: 18
+
+    NetworkTokensResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        network:
+          type: string
+          description: Network ID
+          example: "ethereum"
+        networkName:
+          type: string
+          description: Network name
+          example: "Ethereum"
+        networkLogoUrl:
+          type: string
+          description: Network logo URL
+          example: "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+        tokens:
+          type: array
+          items:
+            type: object
+            properties:
+              symbol:
+                type: string
+                description: Token symbol
+                example: "ETH"
+              name:
+                type: string
+                description: Token name
+                example: "Ethereum"
+              id:
+                type: string
+                description: Token ID
+                example: "ethereum"
+              logoUrl:
+                type: string
+                description: Token logo URL
+                example: "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+
+    TransferLimitsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        reserve:
+          type: string
+          description: Current IDRX reserve
+          example: "1000000.0"
+        minTransferAmount:
+          type: string
+          description: Minimum transfer amount
+          example: "10.0"
+        recommendedMinAmount:
+          type: string
+          description: Recommended minimum amount
+          example: "20.0"
+        maxTransferAmount:
+          type: string
+          description: Maximum transfer amount
+          example: "100000.0"
+        recommendedMaxAmount:
+          type: string
+          description: Recommended maximum amount
+          example: "20000.0"
+        reserveUtilizationPercentage:
+          type: string
+          description: Reserve utilization percentage
+          example: "2.00%"
+        healthStatus:
+          type: string
+          description: Reserve health status
+          enum: [EXCELLENT, GOOD, MODERATE, LOW, CRITICAL]
+          example: "GOOD"
+        recommendations:
+          type: object
+          properties:
+            message:
+              type: string
+              description: Recommendation message
+              example: "Based on the current reserve of 1000000.0 IDRX, we recommend setting transfer limits between 20.0 and 20000.0 IDRX."
+            healthStatus:
+              type: string
+              description: Health status
+              example: "GOOD"
+            healthDescription:
+              type: string
+              description: Health status description
+              example: "The reserve is in good condition. It can support normal operations with moderate transfer limits."
+
+    UpdateTransferLimitsRequest:
+      type: object
+      required:
+        - minAmount
+        - maxAmount
+      properties:
+        minAmount:
+          type: string
+          description: Minimum transfer amount
+          example: "20.0"
+        maxAmount:
+          type: string
+          description: Maximum transfer amount
+          example: "20000.0"
+
+    UpdateTransferLimitsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          description: Status message
+          example: "Transfer limits updated successfully"
+        transactionHash:
+          type: string
+          description: Transaction hash
+          example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        updatedLimits:
+          type: object
+          properties:
+            minAmount:
+              type: string
+              description: Updated minimum amount
+              example: "20.0"
+            maxAmount:
+              type: string
+              description: Updated maximum amount
+              example: "20000.0"
+
+    Transaction:
       type: object
       properties:
         hash:
           type: string
+          description: Transaction hash
           example: "0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba"
         from:
           type: string
+          description: Sender address
           example: "0x1234567890abcdef1234567890abcdef12345678"
         to:
           type: string
+          description: Recipient address
           example: "0xabcdef1234567890abcdef1234567890abcdef12"
         value:
           type: string
+          description: Value in wei
           example: "1000000000000000000"
         valueInEther:
           type: string
+          description: Value in ether
           example: "1"
         timestamp:
           type: integer
+          description: Transaction timestamp
           example: 1681234567
         formattedDate:
           type: string
-          format: date-time
+          description: Formatted date
           example: "2023-04-11T12:34:56.000Z"
         status:
           type: string
+          description: Transaction status
           enum: [success, error, pending]
           example: "success"
         gasUsed:
           type: string
+          description: Gas used
           example: "21000"
         gasPrice:
           type: string
+          description: Gas price
           example: "5000000000"
         blockNumber:
           type: integer
+          description: Block number
           example: 12345678
         isContractInteraction:
           type: boolean
+          description: Whether the transaction is a contract interaction
           example: false
         functionName:
           type: string
-          nullable: true
+          description: Contract function name (if applicable)
           example: null
         methodId:
           type: string
-          nullable: true
+          description: Contract method ID (if applicable)
           example: null
 
     TransactionHistoryResponse:
@@ -1024,45 +1326,134 @@ components:
           example: true
         address:
           type: string
+          description: Address queried
           example: "0x1234567890abcdef1234567890abcdef12345678"
         transactions:
           type: array
           items:
-            $ref: "#/components/schemas/ParsedTransaction"
+            $ref: "#/components/schemas/Transaction"
         pagination:
           type: object
           properties:
             page:
               type: integer
+              description: Current page
               example: 1
             limit:
               type: integer
+              description: Items per page
               example: 10
             total:
               type: integer
+              description: Total items
               example: 45
             hasMore:
               type: boolean
+              description: Whether there are more pages
               example: true
         summary:
           type: object
           properties:
             totalTransactions:
               type: integer
+              description: Total number of transactions
               example: 10
             sentTransactions:
               type: integer
+              description: Number of sent transactions
               example: 6
             receivedTransactions:
               type: integer
+              description: Number of received transactions
               example: 4
             totalSent:
               type: string
+              description: Total amount sent
               example: "2.5"
             totalReceived:
               type: string
+              description: Total amount received
               example: "1.2"
             lastTransaction:
               type: string
-              format: date-time
+              description: Last transaction date
               example: "2023-04-11T12:34:56.000Z"
+
+    TransactionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        transaction:
+          $ref: "#/components/schemas/Transaction"
+
+    BalanceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        address:
+          type: string
+          description: Address queried
+          example: "0x1234567890abcdef1234567890abcdef12345678"
+        balance:
+          type: string
+          description: Raw balance
+          example: "1000000000000000000000"
+        formattedBalance:
+          type: string
+          description: Formatted balance
+          example: "1000.0"
+        tokenSymbol:
+          type: string
+          description: Token symbol
+          example: "IDRX"
+        tokenAddress:
+          type: string
+          description: Token contract address
+          example: "0x0123456789abcdef0123456789abcdef01234568"
+        timestamp:
+          type: integer
+          format: int64
+          description: Timestamp
+          example: 1681234567890
+        idrBalanceFormatted:
+          type: string
+          description: Formatted balance in IDR
+          example: "Rp 1.000"
+
+    TokenInfoResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        name:
+          type: string
+          description: Token name
+          example: "Indonesian Rupiah Stablecoin"
+        symbol:
+          type: string
+          description: Token symbol
+          example: "IDRX"
+        address:
+          type: string
+          description: Token contract address
+          example: "0x0123456789abcdef0123456789abcdef01234568"
+        decimals:
+          type: integer
+          description: Token decimals
+          example: 18
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+          example: "Invalid address format"

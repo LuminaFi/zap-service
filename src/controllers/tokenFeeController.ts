@@ -1,6 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import tokenFeeService from "../services/tokenFeeService";
 import { formatCurrency } from "../utils/general";
+import {
+  getSupportedNetworks,
+  getSupportedTokensForNetwork,
+  getTokenInfoBySymbol,
+  getTokenLogoUrl,
+  getNetworkLogoUrl,
+  normalizeTokenId,
+  NETWORKS,
+  TOKEN_INFO,
+} from "../constants/tokens";
 
 /**
  * Controller for token fee calculation endpoints
@@ -15,13 +25,17 @@ export class TokenFeeController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const token = req.params.token || "ethereum";
+      const token = req.params.token || "eth";
 
       const result = await tokenFeeService.getTokenPrice(token);
+      const logoUrl =
+        getTokenLogoUrl(token) ||
+        getTokenLogoUrl(result.tokenSymbol.toLowerCase());
 
       res.status(200).json({
         success: true,
         ...result,
+        logoUrl,
         priceIdrFormatted: formatCurrency(result.priceIdr, "IDR"),
         priceUsdFormatted: formatCurrency(result.priceUsd, "USD"),
       });
@@ -39,7 +53,7 @@ export class TokenFeeController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { token = "ethereum", amount, customSpreadFee } = req.query;
+      const { token = "eth", amount, customSpreadFee } = req.query;
 
       const tokenStr = token as string;
       const amountNum = parseFloat(amount as string);
@@ -55,8 +69,13 @@ export class TokenFeeController {
         spreadFee
       );
 
+      const logoUrl =
+        getTokenLogoUrl(tokenStr) ||
+        getTokenLogoUrl(result.tokenSymbol.toLowerCase());
+
       const formattedResult = {
         ...result,
+        logoUrl,
         priceIdrFormatted: formatCurrency(result.priceIdr, "IDR"),
         priceUsdFormatted: formatCurrency(result.priceUsd, "USD"),
         adminFeePercentageFormatted: `${(
@@ -88,7 +107,7 @@ export class TokenFeeController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { token = "ethereum", amount, customSpreadFee } = req.query;
+      const { token = "eth", amount, customSpreadFee } = req.query;
 
       const tokenStr = token as string;
       const amountNum = parseFloat(amount as string);
@@ -104,12 +123,17 @@ export class TokenFeeController {
         spreadFee
       );
 
+      const logoUrl =
+        getTokenLogoUrl(tokenStr) ||
+        getTokenLogoUrl(result.feeCalculation.tokenSymbol.toLowerCase());
+
       const response = {
         success: true,
         token: tokenStr,
         sourceAmount: amountNum,
         idrxAmount: result.idrxAmount,
         idrxAmountFormatted: formatCurrency(result.idrxAmount, "IDR"),
+        logoUrl,
         fees: {
           ...result.feeCalculation,
           adminFeePercentageFormatted: `${(
@@ -139,7 +163,7 @@ export class TokenFeeController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { token = "ethereum", idrxAmount, customSpreadFee } = req.query;
+      const { token = "eth", idrxAmount, customSpreadFee } = req.query;
 
       const tokenStr = token as string;
       const idrxAmountNum = parseFloat(idrxAmount as string);
@@ -155,6 +179,10 @@ export class TokenFeeController {
         spreadFee
       );
 
+      const logoUrl =
+        getTokenLogoUrl(tokenStr) ||
+        getTokenLogoUrl(result.feeCalculation.tokenSymbol.toLowerCase());
+
       const response = {
         success: true,
         token: tokenStr,
@@ -164,6 +192,7 @@ export class TokenFeeController {
         }`,
         idrxAmount: idrxAmountNum,
         idrxAmountFormatted: formatCurrency(idrxAmountNum, "IDR"),
+        logoUrl,
         fees: {
           ...result.feeCalculation,
           adminFeePercentageFormatted: `${(
@@ -193,14 +222,16 @@ export class TokenFeeController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const token = req.params.token || "ethereum";
+      const token = req.params.token || "eth";
       const days = parseInt(req.query.days as string) || 1;
 
       const result = await tokenFeeService.calculateVolatility(token, days);
+      const logoUrl = getTokenLogoUrl(token) || getTokenLogoUrl(result.token);
 
       res.status(200).json({
         success: true,
         ...result,
+        logoUrl,
         volatilityPercentage: `${(result.volatility * 100).toFixed(2)}%`,
         recommendedSpreadFeePercentage: `${(
           result.recommendedSpreadFee * 100
@@ -222,9 +253,130 @@ export class TokenFeeController {
     try {
       const tokens = tokenFeeService.getSupportedTokens();
 
+      const tokensWithLogos = tokens.map((token) => ({
+        ...token,
+        logoUrl: getTokenLogoUrl(token.symbol.toLowerCase()),
+      }));
+
       res.status(200).json({
         success: true,
-        tokens,
+        tokens: tokensWithLogos,
+      });
+    } catch (error) {
+      next(error);
+    }
+
+    return Promise.resolve();
+  }
+
+  /**
+   * Get list of supported tokens grouped by network
+   */
+  public getSupportedTokensByNetwork(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const tokensByNetwork = tokenFeeService.getSupportedTokensByNetwork();
+
+      const networksWithLogos = tokensByNetwork.map((network) => {
+        const networkLogoUrl = getNetworkLogoUrl(network.network);
+
+        const tokensWithLogos = network.tokens.map((symbol) => {
+          const tokenInfo = getTokenInfoBySymbol(symbol);
+          return {
+            symbol,
+            name: tokenInfo?.name || symbol.toUpperCase(),
+            logoUrl: tokenInfo?.logoUrl || undefined,
+          };
+        });
+
+        return {
+          network: network.network,
+          networkName:
+            NETWORKS[network.network as keyof typeof NETWORKS]?.name ||
+            network.network,
+          logoUrl: networkLogoUrl,
+          tokens: tokensWithLogos,
+        };
+      });
+
+      res.status(200).json({
+        success: true,
+        networks: networksWithLogos,
+      });
+    } catch (error) {
+      next(error);
+    }
+
+    return Promise.resolve();
+  }
+
+  /**
+   * Get supported networks with their configuration
+   */
+  public getSupportedNetworks(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const networkIds = getSupportedNetworks();
+
+      const networks = networkIds.map((id) => {
+        const network = NETWORKS[id as keyof typeof NETWORKS];
+        return {
+          id,
+          name: network.name,
+          logoUrl: network.logoUrl,
+          nativeCurrency: network.nativeCurrency,
+          mainnetChainId: network.mainnetChainId,
+          testnetChainId: network.testnetChainId,
+        };
+      });
+
+      res.status(200).json({
+        success: true,
+        networks,
+      });
+    } catch (error) {
+      next(error);
+    }
+
+    return Promise.resolve();
+  }
+
+  /**
+   * Get supported tokens for a specific network
+   */
+  public getNetworkTokens(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { network } = req.params;
+      const tokens = getSupportedTokensForNetwork(network);
+
+      const tokenDetails = tokens.map((symbol) => {
+        const info = getTokenInfoBySymbol(symbol);
+        return {
+          symbol,
+          name: info?.name || symbol.toUpperCase(),
+          id: info?.id || normalizeTokenId(symbol),
+          logoUrl: info?.logoUrl || undefined,
+        };
+      });
+
+      const networkInfo = NETWORKS[network as keyof typeof NETWORKS];
+
+      res.status(200).json({
+        success: true,
+        network,
+        networkName: networkInfo?.name || network,
+        networkLogoUrl: networkInfo?.logoUrl,
+        tokens: tokenDetails,
       });
     } catch (error) {
       next(error);

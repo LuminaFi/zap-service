@@ -1,5 +1,12 @@
 import axios from "axios";
 import { ServiceError } from "../types";
+import {
+  normalizeTokenId,
+  getTokenInfoBySymbol,
+  getSupportedNetworks,
+  getSupportedTokensForNetwork,
+  TOKEN_INFO,
+} from "../constants/tokens";
 
 /**
  * Interface for token price data
@@ -44,6 +51,14 @@ export interface VolatilityResult {
 }
 
 /**
+ * Interface for network token support
+ */
+export interface NetworkTokenSupport {
+  network: string;
+  tokens: string[];
+}
+
+/**
  * Service for calculating token prices, admin fees, and spread fees
  */
 export class TokenFeeService {
@@ -74,7 +89,7 @@ export class TokenFeeService {
    * @returns Token price data
    */
   public async getTokenPrice(token: string): Promise<TokenPriceData> {
-    const normalizedToken = this.normalizeTokenName(token);
+    const normalizedToken = normalizeTokenId(token);
 
     const cachedData = this.priceCache.get(normalizedToken);
     if (cachedData && Date.now() - cachedData.timestamp < this.CACHE_TTL) {
@@ -102,9 +117,15 @@ export class TokenFeeService {
 
       const priceIdr = priceUsd * this.IDR_TO_USD_RATE;
 
+      // Get token symbol from our constants
+      const tokenInfo = Object.values(TOKEN_INFO).find(
+        (info) => info.id === normalizedToken
+      );
+      const tokenSymbol = tokenInfo ? tokenInfo.symbol : token.toUpperCase();
+
       const result: TokenPriceData = {
         token: normalizedToken,
-        tokenSymbol: this.getTokenSymbol(normalizedToken),
+        tokenSymbol,
         priceUsd,
         priceIdr,
         timestamp: Date.now(),
@@ -181,7 +202,8 @@ export class TokenFeeService {
       const totalFeePercentage =
         this.ADMIN_FEE_PERCENTAGE + spreadFeePercentage;
 
-      const amountAfterFees = amount + totalFeeAmount;
+      const amountBeforeFees = amount;
+      const amountAfterFees = amount - totalFeeAmount;
 
       const exchangeRate = priceData.priceIdr;
 
@@ -196,7 +218,7 @@ export class TokenFeeService {
         spreadFeeAmount,
         totalFeePercentage,
         totalFeeAmount,
-        amountBeforeFees: amount,
+        amountBeforeFees,
         amountAfterFees,
         exchangeRate,
         timestamp: Date.now(),
@@ -368,7 +390,7 @@ export class TokenFeeService {
       throw new ServiceError("Days parameter must be between 1 and 30", 400);
     }
 
-    const normalizedToken = this.normalizeTokenName(token);
+    const normalizedToken = normalizeTokenId(token);
 
     const cacheKey = `${normalizedToken}-${days}`;
 
@@ -504,53 +526,16 @@ export class TokenFeeService {
   }
 
   /**
-   * Normalize token name for CoinGecko API
-   * @param token User input token name
-   * @returns Normalized token name for CoinGecko
+   * Get supported tokens by network
+   * @returns Array of network with supported tokens
    */
-  private normalizeTokenName(token: string): string {
-    const normalized = token.toLowerCase().trim();
+  public getSupportedTokensByNetwork(): NetworkTokenSupport[] {
+    const networks = getSupportedNetworks();
 
-    const tokenMap: Record<string, string> = {
-      eth: "ethereum",
-      btc: "bitcoin",
-      sol: "solana",
-      avax: "avalanche-2",
-      bnb: "binancecoin",
-      matic: "matic-network",
-      dot: "polkadot",
-      link: "chainlink",
-      uni: "uniswap",
-      ada: "cardano",
-      doge: "dogecoin",
-      shib: "shiba-inu",
-    };
-
-    return tokenMap[normalized] || normalized;
-  }
-
-  /**
-   * Get token symbol from normalized name
-   * @param normalizedToken Normalized token name
-   * @returns Token symbol
-   */
-  private getTokenSymbol(normalizedToken: string): string {
-    const symbolMap: Record<string, string> = {
-      ethereum: "ETH",
-      bitcoin: "BTC",
-      solana: "SOL",
-      "avalanche-2": "AVAX",
-      binancecoin: "BNB",
-      "matic-network": "MATIC",
-      polkadot: "DOT",
-      chainlink: "LINK",
-      uniswap: "UNI",
-      cardano: "ADA",
-      dogecoin: "DOGE",
-      "shiba-inu": "SHIB",
-    };
-
-    return symbolMap[normalizedToken] || normalizedToken.toUpperCase();
+    return networks.map((network) => ({
+      network,
+      tokens: getSupportedTokensForNetwork(network),
+    }));
   }
 
   /**
@@ -558,20 +543,10 @@ export class TokenFeeService {
    * @returns Array of supported tokens with their symbols
    */
   public getSupportedTokens(): Array<{ id: string; symbol: string }> {
-    return [
-      { id: "ethereum", symbol: "ETH" },
-      { id: "bitcoin", symbol: "BTC" },
-      { id: "solana", symbol: "SOL" },
-      { id: "avalanche-2", symbol: "AVAX" },
-      { id: "binancecoin", symbol: "BNB" },
-      { id: "matic-network", symbol: "MATIC" },
-      { id: "polkadot", symbol: "DOT" },
-      { id: "chainlink", symbol: "LINK" },
-      { id: "uniswap", symbol: "UNI" },
-      { id: "cardano", symbol: "ADA" },
-      { id: "dogecoin", symbol: "DOGE" },
-      { id: "shiba-inu", symbol: "SHIB" },
-    ];
+    return Object.values(TOKEN_INFO).map((token) => ({
+      id: token.id,
+      symbol: token.symbol,
+    }));
   }
 }
 

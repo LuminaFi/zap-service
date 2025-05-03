@@ -60,6 +60,15 @@ const validators = {
       .isInt({ min: 1, max: 30 })
       .withMessage("Days must be an integer between 1 and 30"),
   ],
+
+  getNetworkTokens: [
+    param("network")
+      .isString()
+      .notEmpty()
+      .withMessage("Network is required")
+      .isIn(["ethereum", "bsc", "polygon"])
+      .withMessage("Network must be 'ethereum', 'bsc', or 'polygon'"),
+  ],
 };
 
 /**
@@ -128,5 +137,34 @@ router.get(
  * @access Public
  */
 router.get("/supported-tokens", tokenFeeController.getSupportedTokens);
+
+/**
+ * @route GET /api/tokens-by-network
+ * @desc Get supported tokens grouped by network
+ * @access Public
+ */
+router.get(
+  "/tokens-by-network",
+  tokenFeeController.getSupportedTokensByNetwork
+);
+
+/**
+ * @route GET /api/supported-networks
+ * @desc Get list of supported networks
+ * @access Public
+ */
+router.get("/supported-networks", tokenFeeController.getSupportedNetworks);
+
+/**
+ * @route GET /api/network/:network/tokens
+ * @desc Get tokens for a specific network
+ * @access Public
+ */
+router.get(
+  "/network/:network/tokens",
+  validators.getNetworkTokens,
+  validate,
+  tokenFeeController.getNetworkTokens
+);
 
 export default router;
