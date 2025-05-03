@@ -13,6 +13,12 @@ const config = {
     contractAddress: process.env.CONTRACT_ADDRESS,
     operatorPrivateKey: process.env.OPERATOR_PRIVATE_KEY,
   },
+  api: {
+    coinmarketcap: {
+      apiKey: process.env.COINMARKETCAP_API_KEY,
+      baseUrl: "https://pro-api.coinmarketcap.com/v1",
+    },
+  },
   contractAbi: [
     "function transferIDRX(bytes32 _transferId, address _recipient, uint256 _idrxAmount) external",
     "function minTransferAmount() public view returns (uint256)",
@@ -45,6 +51,12 @@ const config = {
 
     if (!ethers.utils.isAddress(process.env.CONTRACT_ADDRESS as string)) {
       throw new Error("Invalid CONTRACT_ADDRESS format");
+    }
+
+    if (!process.env.COINMARKETCAP_API_KEY) {
+      console.warn(
+        "COINMARKETCAP_API_KEY is not set. Token price API calls may fail."
+      );
     }
   },
 };

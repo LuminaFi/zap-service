@@ -62,7 +62,8 @@ export interface NetworkTokenSupport {
  * Service for calculating token prices, admin fees, and spread fees
  */
 export class TokenFeeService {
-  private readonly COINGECKO_API_URL = "https://api.coingecko.com/api/v3";
+  private readonly CMC_API_URL = "https://pro-api.coinmarketcap.com/v1";
+  private readonly CMC_API_KEY = process.env.COINMARKETCAP_API_KEY || "";
   private IDR_TO_USD_RATE = 15500;
   private readonly CACHE_TTL = 5 * 60 * 1000;
   private priceCache: Map<string, { data: TokenPriceData; timestamp: number }>;
@@ -75,14 +76,18 @@ export class TokenFeeService {
 
   private readonly DEFAULT_SPREAD_FEE_PERCENTAGE = 0.002;
 
-  private readonly USER_AGENT = "ZAP Cross-Chain Transfer Service/1.0 (+https://zap-service-jkce.onrender.com/)";
-
   constructor() {
     this.priceCache = new Map();
     this.volatilityCache = new Map();
     this.updateIdrUsdRate();
 
     setInterval(() => this.updateIdrUsdRate(), 60 * 60 * 1000);
+
+    if (!this.CMC_API_KEY) {
+      console.warn(
+        "COINMARKETCAP_API_KEY is not set in environment variables. API calls may fail."
+      );
+    }
   }
 
   /**
@@ -99,34 +104,40 @@ export class TokenFeeService {
     }
 
     try {
+      const tokenInfo = Object.values(TOKEN_INFO).find(
+        (info) => info.id === normalizedToken
+      );
+      const tokenSymbol = tokenInfo ? tokenInfo.symbol : token.toUpperCase();
+
       const response = await axios.get(
-        `${this.COINGECKO_API_URL}/simple/price`,
+        `${this.CMC_API_URL}/cryptocurrency/quotes/latest`,
         {
           params: {
-            ids: normalizedToken,
-            vs_currencies: "usd",
-            include_last_updated_at: true,
+            symbol: tokenSymbol,
+            convert: "USD",
           },
           headers: {
-            "User-Agent": this.USER_AGENT,
+            "X-CMC_PRO_API_KEY": this.CMC_API_KEY,
           },
           timeout: 10000,
         }
       );
 
-      if (!response.data[normalizedToken]) {
-        throw new ServiceError(`Token ${token} not found on CoinGecko`, 404);
+      if (
+        !response.data ||
+        !response.data.data ||
+        !response.data.data[tokenSymbol]
+      ) {
+        throw new ServiceError(
+          `Token ${token} not found on CoinMarketCap`,
+          404
+        );
       }
 
-      const priceUsd = response.data[normalizedToken].usd;
+      const tokenData = response.data.data[tokenSymbol];
+      const priceUsd = tokenData.quote.USD.price;
 
       const priceIdr = priceUsd * this.IDR_TO_USD_RATE;
-
-      // Get token symbol from our constants
-      const tokenInfo = Object.values(TOKEN_INFO).find(
-        (info) => info.id === normalizedToken
-      );
-      const tokenSymbol = tokenInfo ? tokenInfo.symbol : token.toUpperCase();
 
       const result: TokenPriceData = {
         token: normalizedToken,
@@ -151,7 +162,7 @@ export class TokenFeeService {
 
       if ((error as any).response && (error as any).response.status === 429) {
         throw new ServiceError(
-          "CoinGecko API rate limit exceeded. Please try again later.",
+          "CoinMarketCap API rate limit exceeded. Please try again later.",
           429
         );
       }
@@ -362,21 +373,27 @@ export class TokenFeeService {
   private async updateIdrUsdRate(): Promise<void> {
     try {
       const response = await axios.get(
-        `${this.COINGECKO_API_URL}/simple/price`,
+        `${this.CMC_API_URL}/cryptocurrency/quotes/latest`,
         {
           params: {
-            ids: "tether",
-            vs_currencies: "idr",
+            symbol: "USDT",
+            convert: "IDR",
           },
           headers: {
-            "User-Agent": this.USER_AGENT,
+            "X-CMC_PRO_API_KEY": this.CMC_API_KEY,
           },
           timeout: 10000,
         }
       );
 
-      if (response.data && response.data.tether && response.data.tether.idr) {
-        this.IDR_TO_USD_RATE = response.data.tether.idr;
+      if (
+        response.data &&
+        response.data.data &&
+        response.data.data.USDT &&
+        response.data.data.USDT.quote &&
+        response.data.data.USDT.quote.IDR
+      ) {
+        this.IDR_TO_USD_RATE = response.data.data.USDT.quote.IDR.price;
         console.log(`Updated IDR to USD rate: ${this.IDR_TO_USD_RATE}`);
       }
     } catch (error) {
@@ -408,9 +425,43 @@ export class TokenFeeService {
     }
 
     try {
-      const history = await this.fetchPriceHistory(normalizedToken, days);
+      const tokenInfo = Object.values(TOKEN_INFO).find(
+        (info) => info.id === normalizedToken
+      );
+      const tokenSymbol = tokenInfo ? tokenInfo.symbol : token.toUpperCase();
 
-      const volatility = this.calculateVolatilityFromPrices(history.prices);
+      const response = await axios.get(
+        `${this.CMC_API_URL}/cryptocurrency/quotes/latest`,
+        {
+          params: {
+            symbol: tokenSymbol,
+            convert: "USD",
+          },
+          headers: {
+            "X-CMC_PRO_API_KEY": this.CMC_API_KEY,
+          },
+          timeout: 10000,
+        }
+      );
+
+      if (
+        !response.data ||
+        !response.data.data ||
+        !response.data.data[tokenSymbol]
+      ) {
+        throw new ServiceError(
+          `Token ${token} not found on CoinMarketCap`,
+          404
+        );
+      }
+
+      const tokenData = response.data.data[tokenSymbol];
+
+      const percentChange24h =
+        Math.abs(tokenData.quote.USD.percent_change_24h || 0) / 100;
+
+      const volatility =
+        days === 1 ? percentChange24h : percentChange24h * Math.sqrt(days);
 
       const recommendedSpreadFee =
         this.calculateRecommendedSpreadFee(volatility);
@@ -438,7 +489,7 @@ export class TokenFeeService {
 
       if ((error as any).response && (error as any).response.status === 429) {
         throw new ServiceError(
-          "CoinGecko API rate limit exceeded. Please try again later.",
+          "CoinMarketCap API rate limit exceeded. Please try again later.",
           429
         );
       }
@@ -448,40 +499,6 @@ export class TokenFeeService {
         500
       );
     }
-  }
-
-  /**
-   * Calculate volatility from price data
-   * @param prices Array of [timestamp, price] pairs
-   * @returns Volatility as a decimal (e.g., 0.05 = 5%)
-   */
-  private calculateVolatilityFromPrices(prices: [number, number][]): number {
-    if (prices.length < 2) {
-      return 0;
-    }
-
-    const priceValues = prices.map((pair) => pair[1]);
-
-    const pctChanges: number[] = [];
-    for (let i = 1; i < priceValues.length; i++) {
-      const pctChange =
-        (priceValues[i] - priceValues[i - 1]) / priceValues[i - 1];
-      pctChanges.push(pctChange);
-    }
-
-    const mean =
-      pctChanges.reduce((sum, val) => sum + val, 0) / pctChanges.length;
-    const squaredDifferences = pctChanges.map((val) => Math.pow(val - mean, 2));
-    const variance =
-      squaredDifferences.reduce((sum, val) => sum + val, 0) / pctChanges.length;
-    const stdDev = Math.sqrt(variance);
-
-    const samplesPerDay = pctChanges.length;
-    const annualizedVolatility = stdDev * Math.sqrt(365 * samplesPerDay);
-
-    const dailyVolatility = annualizedVolatility / Math.sqrt(365);
-
-    return dailyVolatility;
   }
 
   /**
@@ -499,41 +516,6 @@ export class TokenFeeService {
     const totalFee = baseFee + volatilityComponent;
 
     return Math.min(totalFee, maxFee);
-  }
-
-  /**
-   * Fetch price history from CoinGecko
-   * @param token Token ID in CoinGecko
-   * @param days Number of days of history
-   * @returns Price history data
-   */
-  private async fetchPriceHistory(
-    token: string,
-    days: number
-  ): Promise<{ prices: [number, number][] }> {
-    try {
-      const response = await axios.get(
-        `${this.COINGECKO_API_URL}/coins/${token}/market_chart`,
-        {
-          params: {
-            vs_currency: "usd",
-            days: days.toString(),
-          },
-          headers: {
-            "User-Agent": this.USER_AGENT,
-          },
-          timeout: 10000,
-        }
-      );
-
-      return response.data;
-    } catch (error) {
-      if ((error as any).response && (error as any).response.status === 404) {
-        throw new ServiceError(`Token ${token} not found on CoinGecko`, 404);
-      }
-
-      throw error;
-    }
   }
 
   /**
