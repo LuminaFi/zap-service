@@ -75,7 +75,7 @@ export class TokenFeeService {
 
   private readonly DEFAULT_SPREAD_FEE_PERCENTAGE = 0.002;
 
-  private readonly USER_AGENT = "ZAP Cross-Chain Transfer Service/1.0";
+  private readonly USER_AGENT = "ZAP Cross-Chain Transfer Service/1.0 (+https://zap-service-jkce.onrender.com/)";
 
   constructor() {
     this.priceCache = new Map();
