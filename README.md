@@ -14,6 +14,7 @@ A TypeScript-based backend service for facilitating cross-chain token transfers 
   - [Token Fee API](#token-fee-api)
   - [Reserve Limit API](#reserve-limit-api)
   - [Transaction History API](#transaction-history-api)
+  - [IDRX Balance API](#idrx-balance-api)
 - [Security Considerations](#security-considerations)
 - [Deployment](#deployment)
 - [License](#license)
@@ -28,6 +29,7 @@ The service provides:
 - Dynamic fee calculations with admin fee + spread fee
 - Automatic reserve management
 - Complete transaction history tracking
+- IDRX token balance checking
 
 ## ✨ Features
 
@@ -36,6 +38,7 @@ The service provides:
 - **Multi-Currency Support**: Support for Ethereum, Solana, and other major cryptocurrencies
 - **Reserve Management**: Dynamically adjust transfer limits based on reserve health
 - **Transaction History**: Track and display transaction history across chains
+- **Balance Checking**: Query IDRX token balances for any Lisk address
 - **Secure Implementation**: Built with robust error handling and comprehensive validation
 - **Type-Safe**: Full TypeScript implementation with clear type definitions
 - **Clean Architecture**: Follows SOLID principles for maintainability and testability
@@ -67,7 +70,8 @@ zap-cross-chain-service/
 │   │   ├── metaTransactionController.ts
 │   │   ├── tokenFeeController.ts
 │   │   ├── reserveLimitController.ts
-│   │   └── transactionHistoryController.ts
+│   │   ├── transactionHistoryController.ts
+│   │   └── idrxBalanceController.ts
 │   ├── middleware/            # Express middleware
 │   │   ├── errorHandler.ts    # Global error handling
 │   │   └── validator.ts       # Request validation
@@ -75,7 +79,8 @@ zap-cross-chain-service/
 │   │   ├── metaTransactionService.ts
 │   │   ├── tokenFeeService.ts
 │   │   ├── reserveLimitService.ts
-│   │   └── transactionHistoryService.ts
+│   │   ├── transactionHistoryService.ts
+│   │   └── idrxBalanceService.ts
 │   ├── types/                 # TypeScript definitions
 │   │   └── index.ts
 │   ├── utils/                 # Utility functions
@@ -85,7 +90,8 @@ zap-cross-chain-service/
 │   │   ├── metaTransactionRoutes.ts
 │   │   ├── tokenFeeRoutes.ts
 │   │   ├── reserveLimitRoutes.ts
-│   │   └── transactionHistoryRoutes.ts
+│   │   ├── transactionHistoryRoutes.ts
+│   │   └── idrxBalanceRoutes.ts
 │   ├── app.ts                 # Express application setup
 │   └── server.ts              # Server entry point
 ├── .env.example               # Environment variables template
@@ -553,6 +559,51 @@ Get detailed information about a specific transaction.
     "functionName": null,
     "methodId": null
   }
+}
+```
+
+### IDRX Balance API
+
+#### GET /api/idrx-balance/:address
+
+Get IDRX token balance for a specific address.
+
+**Parameters:**
+
+- `address` (path): Ethereum-compatible address to check balance for
+
+**Example:** `/api/idrx-balance/0x1234567890abcdef1234567890abcdef12345678`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "address": "0x1234567890abcdef1234567890abcdef12345678",
+  "balance": "1000000000000000000000",
+  "formattedBalance": "1000.0",
+  "tokenSymbol": "IDRX",
+  "tokenAddress": "0x0123456789abcdef0123456789abcdef01234568",
+  "timestamp": 1681234567890,
+  "idrBalanceFormatted": "Rp 1.000"
+}
+```
+
+#### GET /api/idrx-token-info
+
+Get IDRX token information including name, symbol, and decimals.
+
+**Example:** `/api/idrx-token-info`
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "name": "Indonesian Rupiah Stablecoin",
+  "symbol": "IDRX",
+  "address": "0x0123456789abcdef0123456789abcdef01234568",
+  "decimals": 18
 }
 ```
 
