@@ -181,7 +181,7 @@ export class TokenFeeService {
       const totalFeePercentage =
         this.ADMIN_FEE_PERCENTAGE + spreadFeePercentage;
 
-      const amountAfterFees = amount - totalFeeAmount;
+      const amountAfterFees = amount + totalFeeAmount;
 
       const exchangeRate = priceData.priceIdr;
 
@@ -488,7 +488,6 @@ export class TokenFeeService {
           params: {
             vs_currency: "usd",
             days: days.toString(),
-            interval: days <= 1 ? "minute" : "hour",
           },
           timeout: 10000,
         }

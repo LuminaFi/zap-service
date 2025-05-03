@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import tokenFeeService from "../services/tokenFeeService";
+import { formatCurrency } from "../utils/general";
 
 /**
  * Controller for token fee calculation endpoints
@@ -21,8 +22,8 @@ export class TokenFeeController {
       res.status(200).json({
         success: true,
         ...result,
-        priceIdrFormatted: this.formatCurrency(result.priceIdr, "IDR"),
-        priceUsdFormatted: this.formatCurrency(result.priceUsd, "USD"),
+        priceIdrFormatted: formatCurrency(result.priceIdr, "IDR"),
+        priceUsdFormatted: formatCurrency(result.priceUsd, "USD"),
       });
     } catch (error) {
       next(error);
@@ -56,8 +57,8 @@ export class TokenFeeController {
 
       const formattedResult = {
         ...result,
-        priceIdrFormatted: this.formatCurrency(result.priceIdr, "IDR"),
-        priceUsdFormatted: this.formatCurrency(result.priceUsd, "USD"),
+        priceIdrFormatted: formatCurrency(result.priceIdr, "IDR"),
+        priceUsdFormatted: formatCurrency(result.priceUsd, "USD"),
         adminFeePercentageFormatted: `${(
           result.adminFeePercentage * 100
         ).toFixed(2)}%`,
@@ -108,7 +109,7 @@ export class TokenFeeController {
         token: tokenStr,
         sourceAmount: amountNum,
         idrxAmount: result.idrxAmount,
-        idrxAmountFormatted: this.formatCurrency(result.idrxAmount, "IDR"),
+        idrxAmountFormatted: formatCurrency(result.idrxAmount, "IDR"),
         fees: {
           ...result.feeCalculation,
           adminFeePercentageFormatted: `${(
@@ -162,7 +163,7 @@ export class TokenFeeController {
           result.feeCalculation.tokenSymbol
         }`,
         idrxAmount: idrxAmountNum,
-        idrxAmountFormatted: this.formatCurrency(idrxAmountNum, "IDR"),
+        idrxAmountFormatted: formatCurrency(idrxAmountNum, "IDR"),
         fees: {
           ...result.feeCalculation,
           adminFeePercentageFormatted: `${(
@@ -230,20 +231,6 @@ export class TokenFeeController {
     }
 
     return Promise.resolve();
-  }
-
-  /**
-   * Format currency for display
-   */
-  private formatCurrency(amount: number, currency: string): string {
-    const formatter = new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: currency === "IDR" ? "IDR" : "USD",
-      minimumFractionDigits: currency === "IDR" ? 0 : 2,
-      maximumFractionDigits: currency === "IDR" ? 0 : 2,
-    });
-
-    return formatter.format(amount);
   }
 }
 

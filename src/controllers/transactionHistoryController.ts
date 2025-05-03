@@ -8,6 +8,11 @@ import { ServiceError } from "../types";
  * Controller for transaction history endpoints
  */
 export class TransactionHistoryController {
+  constructor() {
+    this.getTransactionHistory = this.getTransactionHistory.bind(this);
+    this.getTransactionByHash = this.getTransactionByHash.bind(this);
+  }
+
   /**
    * Get transaction history for an address
    */

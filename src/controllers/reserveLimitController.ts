@@ -5,6 +5,12 @@ import reserveLimitService from "../services/reserveLimitService";
  * Controller for reserve limit endpoints
  */
 export class ReserveLimitController {
+  constructor() {
+    this.getHealthDescription = this.getHealthDescription.bind(this);
+    this.calculateTransferLimits = this.calculateTransferLimits.bind(this);
+    this.updateTransferLimits = this.updateTransferLimits.bind(this);
+  }
+
   /**
    * Calculate transfer limits based on reserve pool
    */
