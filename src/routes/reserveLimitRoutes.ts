@@ -1,6 +1,6 @@
 import { Router } from "express";
 import reserveLimitController from "../controllers/reserveLimitController";
-import { body, param, query } from "express-validator";
+import { body, query } from "express-validator";
 import { validate } from "../middleware/validator";
 
 const router = Router();
@@ -27,22 +27,16 @@ const validators = {
 };
 
 /**
- * Validation rules for max transfer limit endpoint
- */
-const maxTransferLimitValidators = [
-  param("token").isString().notEmpty().withMessage("Token symbol is required"),
-  query("amount")
-    .optional()
-    .isFloat({ min: 0.000001 })
-    .withMessage("Amount must be a positive number"),
-];
-
-/**
  * @route GET /api/transfer-limits
  * @desc Calculate transfer limits based on reserve pool
  * @access Public
  */
-router.get("/transfer-limits", reserveLimitController.calculateTransferLimits);
+router.get(
+  "/transfer-limits",
+  [query("token").optional().isString().withMessage("Token must be a string")],
+  validate,
+  reserveLimitController.calculateTransferLimits
+);
 
 /**
  * @route POST /api/transfer-limits
@@ -54,18 +48,6 @@ router.post(
   validators.updateTransferLimits,
   validate,
   reserveLimitController.updateTransferLimits
-);
-
-/**
- * @route GET /api/max-transfer-limit/:token
- * @desc Get maximum transfer limit based on sender token
- * @access Public
- */
-router.get(
-  "/max-transfer-limit/:token",
-  maxTransferLimitValidators,
-  validate,
-  reserveLimitController.getMaxTransferLimitBySenderToken
 );
 
 export default router;

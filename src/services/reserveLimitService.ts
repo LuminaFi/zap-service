@@ -13,6 +13,14 @@ export interface TransferLimitResult {
   recommendedMaxAmount: string;
   reserveUtilizationPercentage: string;
   healthStatus: "EXCELLENT" | "GOOD" | "MODERATE" | "LOW" | "CRITICAL";
+  tokenInfo?: {
+    tokenSymbol: string;
+    tokenPrice: number;
+    minTokenAmount: string;
+    maxTokenAmount: string;
+    recommendedMinTokenAmount: string;
+    recommendedMaxTokenAmount: string;
+  };
 }
 
 /**
@@ -21,9 +29,12 @@ export interface TransferLimitResult {
 export class ReserveLimitService {
   /**
    * Calculate recommended transfer limits based on current reserve
+   * @param tokenSymbol Optional token symbol to convert limits to
    * @returns Transfer limit calculations
    */
-  public async calculateTransferLimits(): Promise<TransferLimitResult> {
+  public async calculateTransferLimits(
+    tokenSymbol?: string
+  ): Promise<TransferLimitResult> {
     try {
       const contract = getContract();
 
@@ -73,7 +84,7 @@ export class ReserveLimitService {
 
       const utilizationPercentage = (recommendedMaxAmount / reserveValue) * 100;
 
-      return {
+      const result: TransferLimitResult = {
         reserve: reserveFormatted,
         minTransferAmount: minAmountFormatted,
         recommendedMinAmount: recommendedMinAmount.toFixed(2),
@@ -82,6 +93,49 @@ export class ReserveLimitService {
         reserveUtilizationPercentage: utilizationPercentage.toFixed(2) + "%",
         healthStatus,
       };
+
+      if (tokenSymbol) {
+        const tokenFeeService = await import(
+          "../services/tokenFeeService"
+        ).then((module) => module.default);
+
+        const priceData = await tokenFeeService.getTokenPrice(tokenSymbol);
+
+        const minSourceResult = await tokenFeeService.calculateSourceAmount(
+          tokenSymbol,
+          parseFloat(minAmountFormatted)
+        );
+
+        const maxSourceResult = await tokenFeeService.calculateSourceAmount(
+          tokenSymbol,
+          parseFloat(maxAmountFormatted)
+        );
+
+        const recommendedMinSourceResult =
+          await tokenFeeService.calculateSourceAmount(
+            tokenSymbol,
+            recommendedMinAmount
+          );
+
+        const recommendedMaxSourceResult =
+          await tokenFeeService.calculateSourceAmount(
+            tokenSymbol,
+            recommendedMaxAmount
+          );
+
+        result.tokenInfo = {
+          tokenSymbol: priceData.tokenSymbol,
+          tokenPrice: priceData.priceIdr,
+          minTokenAmount: minSourceResult.sourceAmount.toFixed(8),
+          maxTokenAmount: maxSourceResult.sourceAmount.toFixed(8),
+          recommendedMinTokenAmount:
+            recommendedMinSourceResult.sourceAmount.toFixed(8),
+          recommendedMaxTokenAmount:
+            recommendedMaxSourceResult.sourceAmount.toFixed(8),
+        };
+      }
+
+      return result;
     } catch (error) {
       console.error("Error calculating transfer limits:", error);
 
@@ -156,89 +210,6 @@ export class ReserveLimitService {
       }
 
       throw new ServiceError("Failed to update contract limits", 500);
-    }
-  }
-
-  /**
-   * Get maximum transfer limit based on sender token
-   * @param tokenSymbol Token symbol (eth, sol, etc.)
-   * @param tokenAmount Optional amount of sender token available
-   * @returns Maximum IDRX amount that can be transferred
-   */
-  public async getMaxTransferLimitBySenderToken(
-    tokenSymbol: string,
-    tokenAmount?: number
-  ): Promise<{
-    maxTransferAmount: string;
-    tokenSymbol: string;
-    tokenPrice: number;
-    tokenValueInIdrx: string;
-    limitedBy: "contract" | "reserve" | "tokenAmount" | "none";
-    healthStatus: "EXCELLENT" | "GOOD" | "MODERATE" | "LOW" | "CRITICAL";
-  }> {
-    try {
-      const limits = await this.calculateTransferLimits();
-
-      const tokenFeeService = await import("../services/tokenFeeService").then(
-        (module) => module.default
-      );
-
-      const priceData = await tokenFeeService.getTokenPrice(tokenSymbol);
-
-      const contractMaxAmount = parseFloat(limits.maxTransferAmount);
-      const recommendedMaxAmount = parseFloat(limits.recommendedMaxAmount);
-
-      let tokenValueInIdrx = "unlimited";
-      let maxTransferAmount = recommendedMaxAmount;
-      let limitedBy: "contract" | "reserve" | "tokenAmount" | "none" =
-        "reserve";
-
-      if (tokenAmount) {
-        const result = await tokenFeeService.calculateIdrxAmount(
-          tokenSymbol,
-          tokenAmount
-        );
-
-        const tokenIdrxValue = result.idrxAmount;
-        tokenValueInIdrx = tokenIdrxValue.toFixed(2);
-
-        if (tokenIdrxValue < recommendedMaxAmount) {
-          maxTransferAmount = tokenIdrxValue;
-          limitedBy = "tokenAmount";
-        }
-      }
-
-      if (contractMaxAmount < maxTransferAmount) {
-        maxTransferAmount = contractMaxAmount;
-        limitedBy = "contract";
-      }
-
-      if (maxTransferAmount >= parseFloat(limits.reserve)) {
-        maxTransferAmount = parseFloat(limits.reserve) * 0.99;
-        limitedBy = "reserve";
-      }
-
-      return {
-        maxTransferAmount: maxTransferAmount.toFixed(2),
-        tokenSymbol: priceData.tokenSymbol,
-        tokenPrice: priceData.priceIdr,
-        tokenValueInIdrx,
-        limitedBy,
-        healthStatus: limits.healthStatus,
-      };
-    } catch (error) {
-      console.error("Error calculating max transfer limit by token:", error);
-
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-
-      throw new ServiceError(
-        `Failed to calculate transfer limit for ${tokenSymbol}: ${
-          (error as any).message
-        }`,
-        500
-      );
     }
   }
 }

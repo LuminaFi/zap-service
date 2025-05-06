@@ -417,11 +417,17 @@ Get list of supported tokens.
 
 #### GET /api/transfer-limits
 
-Calculate recommended transfer limits based on current reserve pool size.
+Calculate recommended transfer limits based on reserve pool size. If a token parameter is provided, also returns the equivalent limits in that token with all fees included.
 
-**Example:** `/api/transfer-limits`
+**Parameters:**
 
-**Response:**
+- `token` (query): Optional token symbol (eth, sol, etc.) to convert limits to
+
+**Example without token:** `/api/transfer-limits`
+
+**Example with token:** `/api/transfer-limits?token=ethereum`
+
+**Response without token:**
 
 ```json
 {
@@ -441,35 +447,40 @@ Calculate recommended transfer limits based on current reserve pool size.
 }
 ```
 
-#### GET /api/max-transfer-limit/
+**Response with token:**
 
-Get maximum transfer limit based on sender token, taking into account contract limits, reserve health, and token value.
-
-**Parameters:**
-
-- `token` (path): Token symbol (eth, sol, etc.)
-- `amount` (query): Optional amount of token available (optional)
-
-**Example:** `/api/max-transfer-limit/ethereum?amount=0.5`
-
-**Response:**
 ```json
 {
   "success": true,
+  "reserve": "1000000.0",
+  "minTransferAmount": "10.0",
+  "recommendedMinAmount": "20.0",
+  "maxTransferAmount": "100000.0",
+  "recommendedMaxAmount": "20000.0",
+  "reserveUtilizationPercentage": "2.00%",
+  "healthStatus": "GOOD",
   "token": "ethereum",
   "tokenSymbol": "ETH",
   "logoUrl": "https://cryptologos.cc/logos/ethereum-eth-logo.png",
-  "maxTransferAmount": "20000.00",
-  "maxTransferAmountFormatted": "Rp 20.000",
   "tokenPrice": 43949010,
   "tokenPriceFormatted": "Rp 43.949.010",
-  "tokenValueInIdrx": "21829815.22",
-  "limitedBy": "reserve",
-  "healthStatus": "GOOD",
-  "healthDescription": "The reserve is in good condition. It can support normal operations with moderate transfer limits."
+  "tokenLimits": {
+    "minTokenAmount": "0.00023126",
+    "maxTokenAmount": "2.28500000",
+    "recommendedMinTokenAmount": "0.00045000",
+    "recommendedMaxTokenAmount": "0.45700000",
+    "formattedMinTokenAmount": "0.00023126 ETH",
+    "formattedMaxTokenAmount": "2.28500000 ETH",
+    "formattedRecommendedMinTokenAmount": "0.00045000 ETH",
+    "formattedRecommendedMaxTokenAmount": "0.45700000 ETH"
+  },
+  "recommendations": {
+    "message": "Based on the current reserve of 1000000.0 IDRX, we recommend setting transfer limits between 20.0 and 20000.0 IDRX.",
+    "healthStatus": "GOOD",
+    "healthDescription": "The reserve is in good condition. It can support normal operations with moderate transfer limits."
+  }
 }
 ```
-
 
 #### POST /api/transfer-limits
 

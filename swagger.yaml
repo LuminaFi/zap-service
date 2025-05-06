@@ -402,21 +402,121 @@ paths:
     get:
       tags:
         - Reserve Limit
-      summary: Calculate transfer limits
-      description: Calculate transfer limits based on reserve pool
+      summary: Calculate transfer limits based on reserve pool
+      description: >
+        Calculate recommended transfer limits based on the current reserve pool size.
+        If a token parameter is provided, also returns the equivalent limits in that token
+        with all fees included.
+      operationId: calculateTransferLimits
+      parameters:
+        - name: token
+          in: query
+          description: Optional token symbol (eth, sol, etc.) to convert limits to
+          required: false
+          schema:
+            type: string
+            example: ethereum
       responses:
-        "200":
+        200:
           description: Successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TransferLimitsResponse"
-        "500":
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  reserve:
+                    type: string
+                    example: "1000000.0"
+                  minTransferAmount:
+                    type: string
+                    example: "10.0"
+                  recommendedMinAmount:
+                    type: string
+                    example: "20.0"
+                  maxTransferAmount:
+                    type: string
+                    example: "100000.0"
+                  recommendedMaxAmount:
+                    type: string
+                    example: "20000.0"
+                  reserveUtilizationPercentage:
+                    type: string
+                    example: "2.00%"
+                  healthStatus:
+                    type: string
+                    enum: [EXCELLENT, GOOD, MODERATE, LOW, CRITICAL]
+                    example: GOOD
+                  token:
+                    type: string
+                    example: ethereum
+                  tokenSymbol:
+                    type: string
+                    example: ETH
+                  logoUrl:
+                    type: string
+                    example: https://cryptologos.cc/logos/ethereum-eth-logo.png
+                  tokenPrice:
+                    type: number
+                    example: 43949010
+                  tokenPriceFormatted:
+                    type: string
+                    example: "Rp 43.949.010"
+                  tokenLimits:
+                    type: object
+                    properties:
+                      minTokenAmount:
+                        type: string
+                        example: "0.00023126"
+                      maxTokenAmount:
+                        type: string
+                        example: "2.28500000"
+                      recommendedMinTokenAmount:
+                        type: string
+                        example: "0.00045000"
+                      recommendedMaxTokenAmount:
+                        type: string
+                        example: "0.45700000"
+                      formattedMinTokenAmount:
+                        type: string
+                        example: "0.00023126 ETH"
+                      formattedMaxTokenAmount:
+                        type: string
+                        example: "2.28500000 ETH"
+                      formattedRecommendedMinTokenAmount:
+                        type: string
+                        example: "0.00045000 ETH"
+                      formattedRecommendedMaxTokenAmount:
+                        type: string
+                        example: "0.45700000 ETH"
+                  recommendations:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Based on the current reserve of 1000000.0 IDRX, we recommend setting transfer limits between 20.0 and 20000.0 IDRX."
+                      healthStatus:
+                        type: string
+                        enum: [EXCELLENT, GOOD, MODERATE, LOW, CRITICAL]
+                        example: GOOD
+                      healthDescription:
+                        type: string
+                        example: "The reserve is in good condition. It can support normal operations with moderate transfer limits."
+        500:
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Failed to calculate transfer limits"
     post:
       tags:
         - Reserve Limit
@@ -447,111 +547,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-
-  /max-transfer-limit/{token}:
-    get:
-      tags:
-        - Reserve Limit
-      summary: Get maximum transfer limit based on sender token
-      description: >
-        Calculate the maximum IDRX amount that can be transferred based on the specified token,
-        taking into account contract limits, reserve health, and token value.
-      operationId: getMaxTransferLimitBySenderToken
-      parameters:
-        - name: token
-          in: path
-          description: Token symbol (eth, sol, etc.)
-          required: true
-          schema:
-            type: string
-            example: ethereum
-        - name: amount
-          in: query
-          description: Optional amount of token available
-          required: false
-          schema:
-            type: number
-            format: float
-            minimum: 0.000001
-            example: 0.5
-      responses:
-        200:
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  token:
-                    type: string
-                    example: ethereum
-                  tokenSymbol:
-                    type: string
-                    example: ETH
-                  logoUrl:
-                    type: string
-                    example: https://cryptologos.cc/logos/ethereum-eth-logo.png
-                  maxTransferAmount:
-                    type: string
-                    example: "20000.00"
-                  maxTransferAmountFormatted:
-                    type: string
-                    example: "Rp 20.000"
-                  tokenPrice:
-                    type: number
-                    example: 43949010
-                  tokenPriceFormatted:
-                    type: string
-                    example: "Rp 43.949.010"
-                  tokenValueInIdrx:
-                    type: string
-                    example: "21829815.22"
-                  limitedBy:
-                    type: string
-                    enum: [contract, reserve, tokenAmount, none]
-                    description: >
-                      Factor limiting the transfer:
-                      * `contract` - Limited by contract max transfer amount
-                      * `reserve` - Limited by reserve health
-                      * `tokenAmount` - Limited by value of token amount provided
-                      * `none` - No limiting factor
-                    example: reserve
-                  healthStatus:
-                    type: string
-                    enum: [EXCELLENT, GOOD, MODERATE, LOW, CRITICAL]
-                    example: GOOD
-                  healthDescription:
-                    type: string
-                    example: "The reserve is in good condition. It can support normal operations with moderate transfer limits."
-        400:
-          description: Invalid input
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  error:
-                    type: string
-                    example: "Amount must be a positive number"
-        500:
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  error:
-                    type: string
-                    example: "Failed to calculate transfer limit"
 
   /transactions/{address}:
     get:
