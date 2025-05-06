@@ -448,6 +448,111 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /max-transfer-limit/{token}:
+    get:
+      tags:
+        - Reserve Limit
+      summary: Get maximum transfer limit based on sender token
+      description: >
+        Calculate the maximum IDRX amount that can be transferred based on the specified token,
+        taking into account contract limits, reserve health, and token value.
+      operationId: getMaxTransferLimitBySenderToken
+      parameters:
+        - name: token
+          in: path
+          description: Token symbol (eth, sol, etc.)
+          required: true
+          schema:
+            type: string
+            example: ethereum
+        - name: amount
+          in: query
+          description: Optional amount of token available
+          required: false
+          schema:
+            type: number
+            format: float
+            minimum: 0.000001
+            example: 0.5
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  token:
+                    type: string
+                    example: ethereum
+                  tokenSymbol:
+                    type: string
+                    example: ETH
+                  logoUrl:
+                    type: string
+                    example: https://cryptologos.cc/logos/ethereum-eth-logo.png
+                  maxTransferAmount:
+                    type: string
+                    example: "20000.00"
+                  maxTransferAmountFormatted:
+                    type: string
+                    example: "Rp 20.000"
+                  tokenPrice:
+                    type: number
+                    example: 43949010
+                  tokenPriceFormatted:
+                    type: string
+                    example: "Rp 43.949.010"
+                  tokenValueInIdrx:
+                    type: string
+                    example: "21829815.22"
+                  limitedBy:
+                    type: string
+                    enum: [contract, reserve, tokenAmount, none]
+                    description: >
+                      Factor limiting the transfer:
+                      * `contract` - Limited by contract max transfer amount
+                      * `reserve` - Limited by reserve health
+                      * `tokenAmount` - Limited by value of token amount provided
+                      * `none` - No limiting factor
+                    example: reserve
+                  healthStatus:
+                    type: string
+                    enum: [EXCELLENT, GOOD, MODERATE, LOW, CRITICAL]
+                    example: GOOD
+                  healthDescription:
+                    type: string
+                    example: "The reserve is in good condition. It can support normal operations with moderate transfer limits."
+        400:
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Amount must be a positive number"
+        500:
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Failed to calculate transfer limit"
+
   /transactions/{address}:
     get:
       tags:

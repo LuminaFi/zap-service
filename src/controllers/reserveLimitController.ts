@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import reserveLimitService from "../services/reserveLimitService";
+import { ServiceError } from "@/types";
 
 /**
  * Controller for reserve limit endpoints
@@ -9,6 +10,7 @@ export class ReserveLimitController {
     this.getHealthDescription = this.getHealthDescription.bind(this);
     this.calculateTransferLimits = this.calculateTransferLimits.bind(this);
     this.updateTransferLimits = this.updateTransferLimits.bind(this);
+    this.getMaxTransferLimitBySenderToken = this.getMaxTransferLimitBySenderToken.bind(this);
   }
 
   /**
@@ -60,6 +62,60 @@ export class ReserveLimitController {
           minAmount,
           maxAmount,
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get maximum transfer limit based on sender token
+   */
+  public async getMaxTransferLimitBySenderToken(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { token } = req.params;
+      const { amount } = req.query;
+
+      let tokenAmount: number | undefined = undefined;
+      if (amount) {
+        tokenAmount = parseFloat(amount as string);
+        if (isNaN(tokenAmount) || tokenAmount <= 0) {
+          throw new ServiceError("Amount must be a positive number", 400);
+        }
+      }
+
+      const result = await reserveLimitService.getMaxTransferLimitBySenderToken(
+        token,
+        tokenAmount
+      );
+
+      const { getTokenLogoUrl } = await import("../constants/tokens");
+      const logoUrl =
+        getTokenLogoUrl(token) ||
+        getTokenLogoUrl(result.tokenSymbol.toLowerCase());
+
+      const { formatCurrency } = await import("../utils/general");
+
+      res.status(200).json({
+        success: true,
+        token,
+        tokenSymbol: result.tokenSymbol,
+        logoUrl,
+        maxTransferAmount: result.maxTransferAmount,
+        maxTransferAmountFormatted: formatCurrency(
+          parseFloat(result.maxTransferAmount),
+          "IDR"
+        ),
+        tokenPrice: result.tokenPrice,
+        tokenPriceFormatted: formatCurrency(result.tokenPrice, "IDR"),
+        tokenValueInIdrx: result.tokenValueInIdrx,
+        limitedBy: result.limitedBy,
+        healthStatus: result.healthStatus,
+        healthDescription: this.getHealthDescription(result.healthStatus),
       });
     } catch (error) {
       next(error);

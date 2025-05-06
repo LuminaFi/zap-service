@@ -158,6 +158,89 @@ export class ReserveLimitService {
       throw new ServiceError("Failed to update contract limits", 500);
     }
   }
+
+  /**
+   * Get maximum transfer limit based on sender token
+   * @param tokenSymbol Token symbol (eth, sol, etc.)
+   * @param tokenAmount Optional amount of sender token available
+   * @returns Maximum IDRX amount that can be transferred
+   */
+  public async getMaxTransferLimitBySenderToken(
+    tokenSymbol: string,
+    tokenAmount?: number
+  ): Promise<{
+    maxTransferAmount: string;
+    tokenSymbol: string;
+    tokenPrice: number;
+    tokenValueInIdrx: string;
+    limitedBy: "contract" | "reserve" | "tokenAmount" | "none";
+    healthStatus: "EXCELLENT" | "GOOD" | "MODERATE" | "LOW" | "CRITICAL";
+  }> {
+    try {
+      const limits = await this.calculateTransferLimits();
+
+      const tokenFeeService = await import("../services/tokenFeeService").then(
+        (module) => module.default
+      );
+
+      const priceData = await tokenFeeService.getTokenPrice(tokenSymbol);
+
+      const contractMaxAmount = parseFloat(limits.maxTransferAmount);
+      const recommendedMaxAmount = parseFloat(limits.recommendedMaxAmount);
+
+      let tokenValueInIdrx = "unlimited";
+      let maxTransferAmount = recommendedMaxAmount;
+      let limitedBy: "contract" | "reserve" | "tokenAmount" | "none" =
+        "reserve";
+
+      if (tokenAmount) {
+        const result = await tokenFeeService.calculateIdrxAmount(
+          tokenSymbol,
+          tokenAmount
+        );
+
+        const tokenIdrxValue = result.idrxAmount;
+        tokenValueInIdrx = tokenIdrxValue.toFixed(2);
+
+        if (tokenIdrxValue < recommendedMaxAmount) {
+          maxTransferAmount = tokenIdrxValue;
+          limitedBy = "tokenAmount";
+        }
+      }
+
+      if (contractMaxAmount < maxTransferAmount) {
+        maxTransferAmount = contractMaxAmount;
+        limitedBy = "contract";
+      }
+
+      if (maxTransferAmount >= parseFloat(limits.reserve)) {
+        maxTransferAmount = parseFloat(limits.reserve) * 0.99;
+        limitedBy = "reserve";
+      }
+
+      return {
+        maxTransferAmount: maxTransferAmount.toFixed(2),
+        tokenSymbol: priceData.tokenSymbol,
+        tokenPrice: priceData.priceIdr,
+        tokenValueInIdrx,
+        limitedBy,
+        healthStatus: limits.healthStatus,
+      };
+    } catch (error) {
+      console.error("Error calculating max transfer limit by token:", error);
+
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+
+      throw new ServiceError(
+        `Failed to calculate transfer limit for ${tokenSymbol}: ${
+          (error as any).message
+        }`,
+        500
+      );
+    }
+  }
 }
 
 export default new ReserveLimitService();

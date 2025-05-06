@@ -441,6 +441,36 @@ Calculate recommended transfer limits based on current reserve pool size.
 }
 ```
 
+#### GET /api/max-transfer-limit/
+
+Get maximum transfer limit based on sender token, taking into account contract limits, reserve health, and token value.
+
+**Parameters:**
+
+- `token` (path): Token symbol (eth, sol, etc.)
+- `amount` (query): Optional amount of token available (optional)
+
+**Example:** `/api/max-transfer-limit/ethereum?amount=0.5`
+
+**Response:**
+```json
+{
+  "success": true,
+  "token": "ethereum",
+  "tokenSymbol": "ETH",
+  "logoUrl": "https://cryptologos.cc/logos/ethereum-eth-logo.png",
+  "maxTransferAmount": "20000.00",
+  "maxTransferAmountFormatted": "Rp 20.000",
+  "tokenPrice": 43949010,
+  "tokenPriceFormatted": "Rp 43.949.010",
+  "tokenValueInIdrx": "21829815.22",
+  "limitedBy": "reserve",
+  "healthStatus": "GOOD",
+  "healthDescription": "The reserve is in good condition. It can support normal operations with moderate transfer limits."
+}
+```
+
+
 #### POST /api/transfer-limits
 
 Update contract transfer limits (requires operator privileges).
