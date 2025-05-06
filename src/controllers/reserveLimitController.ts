@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import reserveLimitService from "../services/reserveLimitService";
-import { ServiceError } from "@/types";
+import { ServiceError } from "../types";
 
 /**
  * Controller for reserve limit endpoints
