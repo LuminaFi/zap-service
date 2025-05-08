@@ -10,6 +10,7 @@ import {
   normalizeTokenId,
   NETWORKS,
   TOKEN_INFO,
+  getTokenAddress,
 } from "../constants/tokens";
 
 /**
@@ -269,49 +270,63 @@ export class TokenFeeController {
     return Promise.resolve();
   }
 
-  /**
-   * Get list of supported tokens grouped by network
-   */
-  public getSupportedTokensByNetwork(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const tokensByNetwork = tokenFeeService.getSupportedTokensByNetwork();
+/**
+ * Get list of supported tokens grouped by network
+ */
+public getSupportedTokensByNetwork(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const tokensByNetwork = tokenFeeService.getSupportedTokensByNetwork();
 
-      const networksWithLogos = tokensByNetwork.map((network) => {
-        const networkLogoUrl = getNetworkLogoUrl(network.network);
+    const networksWithLogos = tokensByNetwork.map((network) => {
+      const networkConfig = NETWORKS[network.network as keyof typeof NETWORKS];
+      const networkLogoUrl = getNetworkLogoUrl(network.network);
 
-        const tokensWithLogos = network.tokens.map((symbol) => {
-          const tokenInfo = getTokenInfoBySymbol(symbol);
-          return {
-            symbol,
-            name: tokenInfo?.name || symbol.toUpperCase(),
-            logoUrl: tokenInfo?.logoUrl || undefined,
-          };
-        });
-
+      const tokensWithLogos = network.tokens.map((symbol) => {
+        const tokenInfo = getTokenInfoBySymbol(symbol);
+        const mainnetAddress = getTokenAddress(network.network, symbol, false);
+        const testnetAddress = getTokenAddress(network.network, symbol, true);
+        
         return {
-          network: network.network,
-          networkName:
-            NETWORKS[network.network as keyof typeof NETWORKS]?.name ||
-            network.network,
-          logoUrl: networkLogoUrl,
-          tokens: tokensWithLogos,
+          symbol,
+          name: tokenInfo?.name || symbol.toUpperCase(),
+          logoUrl: tokenInfo?.logoUrl || undefined,
+          addresses: {
+            mainnet: mainnetAddress,
+            testnet: testnetAddress
+          }
         };
       });
 
-      res.status(200).json({
-        success: true,
-        networks: networksWithLogos,
-      });
-    } catch (error) {
-      next(error);
-    }
+      return {
+        network: network.network,
+        networkName: networkConfig?.name || network.network,
+        logoUrl: networkLogoUrl,
+        rpcUrls: {
+          mainnet: networkConfig?.mainnetRpcUrl,
+          testnet: networkConfig?.testnetRpcUrl
+        },
+        chainIds: {
+          mainnet: networkConfig?.mainnetChainId,
+          testnet: networkConfig?.testnetChainId
+        },
+        tokens: tokensWithLogos,
+      };
+    });
 
-    return Promise.resolve();
+    res.status(200).json({
+      success: true,
+      networks: networksWithLogos,
+    });
+  } catch (error) {
+    next(error);
   }
+
+  return Promise.resolve();
+}
 
   /**
    * Get supported networks with their configuration
