@@ -270,63 +270,68 @@ export class TokenFeeController {
     return Promise.resolve();
   }
 
-/**
- * Get list of supported tokens grouped by network
- */
-public getSupportedTokensByNetwork(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const tokensByNetwork = tokenFeeService.getSupportedTokensByNetwork();
+  /**
+   * Get list of supported tokens grouped by network
+   */
+  public getSupportedTokensByNetwork(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const tokensByNetwork = tokenFeeService.getSupportedTokensByNetwork();
 
-    const networksWithLogos = tokensByNetwork.map((network) => {
-      const networkConfig = NETWORKS[network.network as keyof typeof NETWORKS];
-      const networkLogoUrl = getNetworkLogoUrl(network.network);
+      const networksWithLogos = tokensByNetwork.map((network) => {
+        const networkConfig =
+          NETWORKS[network.network as keyof typeof NETWORKS];
+        const networkLogoUrl = getNetworkLogoUrl(network.network);
 
-      const tokensWithLogos = network.tokens.map((symbol) => {
-        const tokenInfo = getTokenInfoBySymbol(symbol);
-        const mainnetAddress = getTokenAddress(network.network, symbol, false);
-        const testnetAddress = getTokenAddress(network.network, symbol, true);
-        
+        const tokensWithLogos = network.tokens.map((symbol) => {
+          const tokenInfo = getTokenInfoBySymbol(symbol);
+          const mainnetAddress = getTokenAddress(
+            network.network,
+            symbol,
+            false
+          );
+          const testnetAddress = getTokenAddress(network.network, symbol, true);
+
+          return {
+            symbol,
+            name: tokenInfo?.name || symbol.toUpperCase(),
+            logoUrl: tokenInfo?.logoUrl || undefined,
+            addresses: {
+              mainnet: mainnetAddress,
+              testnet: testnetAddress,
+            },
+          };
+        });
+
         return {
-          symbol,
-          name: tokenInfo?.name || symbol.toUpperCase(),
-          logoUrl: tokenInfo?.logoUrl || undefined,
-          addresses: {
-            mainnet: mainnetAddress,
-            testnet: testnetAddress
-          }
+          network: network.network,
+          networkName: networkConfig?.name || network.network,
+          logoUrl: networkLogoUrl,
+          rpcUrls: {
+            mainnet: networkConfig?.mainnetRpcUrl,
+            testnet: networkConfig?.testnetRpcUrl,
+          },
+          chainIds: {
+            mainnet: networkConfig?.mainnetChainId,
+            testnet: networkConfig?.testnetChainId,
+          },
+          tokens: tokensWithLogos,
         };
       });
 
-      return {
-        network: network.network,
-        networkName: networkConfig?.name || network.network,
-        logoUrl: networkLogoUrl,
-        rpcUrls: {
-          mainnet: networkConfig?.mainnetRpcUrl,
-          testnet: networkConfig?.testnetRpcUrl
-        },
-        chainIds: {
-          mainnet: networkConfig?.mainnetChainId,
-          testnet: networkConfig?.testnetChainId
-        },
-        tokens: tokensWithLogos,
-      };
-    });
+      res.status(200).json({
+        success: true,
+        networks: networksWithLogos,
+      });
+    } catch (error) {
+      next(error);
+    }
 
-    res.status(200).json({
-      success: true,
-      networks: networksWithLogos,
-    });
-  } catch (error) {
-    next(error);
+    return Promise.resolve();
   }
-
-  return Promise.resolve();
-}
 
   /**
    * Get supported networks with their configuration
@@ -376,11 +381,18 @@ public getSupportedTokensByNetwork(
 
       const tokenDetails = tokens.map((symbol) => {
         const info = getTokenInfoBySymbol(symbol);
+        const mainnetAddress = getTokenAddress(network, symbol, false);
+        const testnetAddress = getTokenAddress(network, symbol, true);
+
         return {
           symbol,
           name: info?.name || symbol.toUpperCase(),
           id: info?.id || normalizeTokenId(symbol),
           logoUrl: info?.logoUrl || undefined,
+          addresses: {
+            mainnet: mainnetAddress,
+            testnet: testnetAddress,
+          },
         };
       });
 
@@ -391,6 +403,14 @@ public getSupportedTokensByNetwork(
         network,
         networkName: networkInfo?.name || network,
         networkLogoUrl: networkInfo?.logoUrl,
+        rpcUrls: {
+          mainnet: networkInfo?.mainnetRpcUrl,
+          testnet: networkInfo?.testnetRpcUrl,
+        },
+        chainIds: {
+          mainnet: networkInfo?.mainnetChainId,
+          testnet: networkInfo?.testnetChainId,
+        },
         tokens: tokenDetails,
       });
     } catch (error) {
