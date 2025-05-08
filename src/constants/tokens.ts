@@ -54,7 +54,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     testnetChainId: 11155111,
     mainnetExplorerUrl: "https://etherscan.io",
     testnetExplorerUrl: "https://sepolia.etherscan.io",
-    logoUrl: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
+    logoUrl: "https://s2.coinmarketcap.com/static/img/coins/128x128/1027.png",
     nativeCurrency: {
       name: "Ether",
       symbol: "ETH",
@@ -73,7 +73,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     testnetChainId: 97,
     mainnetExplorerUrl: "https://bscscan.com",
     testnetExplorerUrl: "https://testnet.bscscan.com",
-    logoUrl: "https://cryptologos.cc/logos/bnb-bnb-logo.png",
+    logoUrl: "https://s2.coinmarketcap.com/static/img/coins/128x128/1839.png",
     nativeCurrency: {
       name: "BNB",
       symbol: "BNB",
@@ -92,7 +92,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     testnetChainId: 80001,
     mainnetExplorerUrl: "https://polygonscan.com",
     testnetExplorerUrl: "https://mumbai.polygonscan.com",
-    logoUrl: "https://cryptologos.cc/logos/polygon-matic-logo.png",
+    logoUrl: "https://s2.coinmarketcap.com/static/img/coins/128x128/3890.png",
     nativeCurrency: {
       name: "MATIC",
       symbol: "MATIC",
@@ -184,43 +184,43 @@ export const TOKEN_INFO: Record<string, TokenInfo> = {
     id: "ethereum",
     symbol: "ETH",
     name: "Ethereum",
-    logoUrl: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
+    logoUrl: "https://s2.coinmarketcap.com/static/img/coins/128x128/1027.png",
   },
   usdt: {
     id: "tether",
     symbol: "USDT",
     name: "Tether USD",
-    logoUrl: "https://cryptologos.cc/logos/tether-usdt-logo.png",
+    logoUrl: "https://s2.coinmarketcap.com/static/img/coins/128x128/825.png",
   },
   wbtc: {
     id: "bitcoin",
     symbol: "WBTC",
     name: "Wrapped Bitcoin",
-    logoUrl: "https://cryptologos.cc/logos/wrapped-bitcoin-wbtc-logo.png",
+    logoUrl: "https://s2.coinmarketcap.com/static/img/coins/128x128/1.png",
   },
   sol: {
     id: "solana",
     symbol: "SOL",
     name: "Solana",
-    logoUrl: "https://cryptologos.cc/logos/solana-sol-logo.png",
+    logoUrl: "https://s2.coinmarketcap.com/static/img/coins/128x128/5426.png",
   },
   pepe: {
     id: "pepe",
     symbol: "PEPE",
     name: "Pepe",
-    logoUrl: "https://cryptologos.cc/logos/pepe-pepe-logo.png",
+    logoUrl: "https://s2.coinmarketcap.com/static/img/coins/128x128/24478.png",
   },
   bnb: {
     id: "binancecoin",
     symbol: "BNB",
     name: "BNB",
-    logoUrl: "https://cryptologos.cc/logos/bnb-bnb-logo.png",
+    logoUrl: "https://s2.coinmarketcap.com/static/img/coins/128x128/1839.png",
   },
   matic: {
     id: "matic-network",
     symbol: "MATIC",
     name: "Polygon",
-    logoUrl: "https://cryptologos.cc/logos/polygon-matic-logo.png",
+    logoUrl: "https://s2.coinmarketcap.com/static/img/coins/128x128/3890.png",
   },
 };
 
