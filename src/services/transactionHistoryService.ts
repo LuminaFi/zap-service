@@ -85,9 +85,7 @@ export interface TransactionHistoryResponse {
  */
 export class TransactionHistoryService {
   private readonly BLOCKSCOUT_API_URL =
-    "https://sepolia-blockscout.lisk.com/api";
-  private readonly BLOCKSCOUT_MODULE = "account";
-  private readonly BLOCKSCOUT_ACTION = "txlist";
+    "https://sepolia-blockscout.lisk.com/api/v2";
 
   /**
    * Fetch transaction history for an address
@@ -106,7 +104,6 @@ export class TransactionHistoryService {
     try {
       const {
         page = 1,
-        offset = 0,
         limit = 20,
         filterBy = "all",
         startDate,
@@ -114,86 +111,74 @@ export class TransactionHistoryService {
         sort = "desc",
       } = params;
 
-      const queryParams: Record<string, string> = {
-        module: this.BLOCKSCOUT_MODULE,
-        action: this.BLOCKSCOUT_ACTION,
-        address,
-        page: page.toString(),
-        offset: offset.toString(),
-        limit: limit.toString(),
-        sort,
+      let endpoint: string;
+      if (filterBy === "from") {
+        endpoint = `${this.BLOCKSCOUT_API_URL}/addresses/${address}/transactions`;
+      } else if (filterBy === "to") {
+        endpoint = `${this.BLOCKSCOUT_API_URL}/addresses/${address}/token-transfers`;
+      } else {
+        endpoint = `${this.BLOCKSCOUT_API_URL}/addresses/${address}/transactions`;
+      }
+
+      const queryParams: Record<string, string | number> = {
+        page,
+        limit,
+        sort_order: sort,
       };
 
       if (startDate) {
-        queryParams.startblock = "0";
+        queryParams.start_timestamp = Math.floor(startDate.getTime() / 1000);
       }
 
       if (endDate) {
-        queryParams.endblock = "999999999";
+        queryParams.end_timestamp = Math.floor(endDate.getTime() / 1000);
       }
 
-      const response = await axios.get(`${this.BLOCKSCOUT_API_URL}`, {
+      const response = await axios.get(endpoint, {
         params: queryParams,
         timeout: 10000,
       });
 
-      if (response.data.status === "0") {
-        if (response.data.message === "No transactions found") {
-          return {
-            transactions: [],
-            pagination: {
-              page,
-              limit,
-              total: 0,
-              hasMore: false,
-            },
-          };
-        }
-        throw new ServiceError(
-          `Blockscout API error: ${response.data.message}`,
-          500
+      if (!response.data || !response.data.items) {
+        return {
+          transactions: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            hasMore: false,
+          },
+        };
+      }
+
+      let transactions = response.data.items;
+
+      if (filterBy === "from" && address) {
+        transactions = transactions.filter(
+          (tx: any) => tx.from.hash.toLowerCase() === address.toLowerCase()
+        );
+      } else if (filterBy === "to" && address) {
+        transactions = transactions.filter(
+          (tx: any) =>
+            tx.to &&
+            tx.to.hash &&
+            tx.to.hash.toLowerCase() === address.toLowerCase()
         );
       }
 
-      let transactions = response.data.result as BlockscoutTransaction[];
-
-      if (filterBy === "from") {
-        transactions = transactions.filter(
-          (tx) => tx.from.toLowerCase() === address.toLowerCase()
-        );
-      } else if (filterBy === "to") {
-        transactions = transactions.filter(
-          (tx) => tx.to && tx.to.toLowerCase() === address.toLowerCase()
-        );
-      }
-
-      if (startDate) {
-        const startTimestamp = Math.floor(startDate.getTime() / 1000);
-        transactions = transactions.filter(
-          (tx) => parseInt(tx.timeStamp) >= startTimestamp
-        );
-      }
-
-      if (endDate) {
-        const endTimestamp = Math.floor(endDate.getTime() / 1000);
-        transactions = transactions.filter(
-          (tx) => parseInt(tx.timeStamp) <= endTimestamp
-        );
-      }
-
-      const parsedTransactions = transactions.map((tx) =>
-        this.parseTransaction(tx)
+      const parsedTransactions = transactions.map((tx: any) =>
+        this.parseTransactionV2(tx, address)
       );
-
-      const total = transactions.length;
 
       return {
         transactions: parsedTransactions,
         pagination: {
           page,
           limit,
-          total,
-          hasMore: total >= limit,
+          total: response.data.next_page_params
+            ? page * limit + 1
+            : transactions.length,
+          hasMore: !!response.data.next_page_params,
         },
       };
     } catch (error) {
@@ -231,72 +216,28 @@ export class TransactionHistoryService {
     txHash: string
   ): Promise<ParsedTransaction> {
     try {
-      const response = await axios.get(`${this.BLOCKSCOUT_API_URL}`, {
-        params: {
-          module: "proxy",
-          action: "eth_getTransactionByHash",
-          txhash: txHash,
-        },
+      const formattedTxHash = txHash.startsWith("0x") ? txHash : `0x${txHash}`;
+
+      const endpoint = `${this.BLOCKSCOUT_API_URL}/transactions/${formattedTxHash}`;
+
+      const response = await axios.get(endpoint, {
         timeout: 10000,
       });
 
-      if (response.data.error) {
-        throw new ServiceError(
-          `Blockscout API error: ${response.data.error.message}`,
-          500
-        );
-      }
-
-      if (!response.data.result) {
+      if (!response.data) {
         throw new ServiceError(`Transaction not found: ${txHash}`, 404);
       }
 
-      const receiptResponse = await axios.get(`${this.BLOCKSCOUT_API_URL}`, {
-        params: {
-          module: "proxy",
-          action: "eth_getTransactionReceipt",
-          txhash: txHash,
-        },
-        timeout: 10000,
-      });
-
-      if (!receiptResponse.data.result) {
-        throw new ServiceError(`Transaction receipt not found: ${txHash}`, 404);
-      }
-
-      const tx = response.data.result;
-      const receipt = receiptResponse.data.result;
-
-      const formattedTx: BlockscoutTransaction = {
-        blockHash: tx.blockHash,
-        blockNumber: tx.blockNumber,
-        confirmations: "0",
-        contractAddress: receipt.contractAddress,
-        cumulativeGasUsed: receipt.cumulativeGasUsed,
-        from: tx.from,
-        gas: tx.gas,
-        gasPrice: tx.gasPrice,
-        gasUsed: receipt.gasUsed,
-        hash: tx.hash,
-        input: tx.input,
-        isError: receipt.status === "0x1" ? "0" : "1",
-        nonce: tx.nonce,
-        timeStamp: Math.floor(Date.now() / 1000).toString(),
-        to: tx.to,
-        transactionIndex: tx.transactionIndex,
-        txreceipt_status: receipt.status.replace("0x", ""),
-        value: tx.value,
-        methodId:
-          tx.input && tx.input.length >= 10 ? tx.input.slice(0, 10) : "",
-        functionName: "",
-      };
-
-      return this.parseTransaction(formattedTx);
+      return this.parseTransactionV2(response.data);
     } catch (error) {
       console.error("Error fetching transaction by hash:", error);
 
       if (error instanceof ServiceError) {
         throw error;
+      }
+
+      if ((error as any).response && (error as any).response.status === 404) {
+        throw new ServiceError(`Transaction not found: ${txHash}`, 404);
       }
 
       throw new ServiceError(
@@ -307,42 +248,59 @@ export class TransactionHistoryService {
   }
 
   /**
-   * Parse raw transaction data into a more usable format
-   * @param tx Raw transaction data from Blockscout
+   * Parse transaction data from Blockscout API v2 to our standard format
+   * @param tx Transaction data from Blockscout API v2
+   * @param contextAddress Optional address for context (to determine tx direction)
    * @returns Parsed transaction data
    */
-  private parseTransaction(tx: BlockscoutTransaction): ParsedTransaction {
-    const valueInWei = parseInt(tx.value, 16) || tx.value;
+  private parseTransactionV2(
+    tx: any,
+    contextAddress?: string
+  ): ParsedTransaction {
+    const valueInWei = tx.value || "0";
     const valueInEther = this.weiToEther(valueInWei);
 
-    const timestamp = parseInt(tx.timeStamp);
+    const timestamp = tx.timestamp
+      ? parseInt(tx.timestamp)
+      : Math.floor(Date.now() / 1000);
     const date = new Date(timestamp * 1000);
 
     let status: "success" | "error" | "pending" = "pending";
-    if (tx.txreceipt_status === "1" || tx.isError === "0") {
+    if (tx.status === "ok" || tx.status === "success" || tx.status === true) {
       status = "success";
-    } else if (tx.txreceipt_status === "0" || tx.isError === "1") {
+    } else if (tx.status === "error" || tx.status === false) {
       status = "error";
     }
 
-    const isContractInteraction =
-      tx.input && tx.input !== "0x" && tx.input.length > 2;
+    const fromAddress = tx.from?.hash || tx.from || "";
+    const toAddress = tx.to?.hash || tx.to || "";
+
+    const input = tx.raw_input || tx.input || "0x";
+    const isContractInteraction = input && input !== "0x" && input.length > 2;
+
+    const methodId =
+      isContractInteraction && input.length >= 10 ? input.slice(0, 10) : null;
+
+    const gasUsed = tx.gas_used?.toString() || "0";
+    const gasPrice = tx.gas_price?.toString() || "0";
+
+    const blockNumber = tx.block ? parseInt(tx.block) : 0;
 
     return {
       hash: tx.hash,
-      from: tx.from,
-      to: tx.to,
-      value: valueInWei.toString(),
+      from: fromAddress,
+      to: toAddress,
+      value: valueInWei,
       valueInEther,
       timestamp,
       formattedDate: date.toISOString(),
       status,
-      gasUsed: tx.gasUsed,
-      gasPrice: tx.gasPrice,
-      blockNumber: parseInt(tx.blockNumber),
-      isContractInteraction: Boolean(isContractInteraction),
-      functionName: tx.functionName || null,
-      methodId: isContractInteraction ? tx.methodId : null,
+      gasUsed,
+      gasPrice,
+      blockNumber,
+      isContractInteraction,
+      functionName: tx.method || null,
+      methodId,
     };
   }
 
@@ -361,7 +319,12 @@ export class TransactionHistoryService {
 
       return etherValue.toFixed(6).replace(/\.?0+$/, "");
     } catch (e) {
-      return "0";
+      try {
+        const etherValue = parseFloat(weiValue) / divisor;
+        return etherValue.toFixed(6).replace(/\.?0+$/, "");
+      } catch {
+        return "0";
+      }
     }
   }
 }
