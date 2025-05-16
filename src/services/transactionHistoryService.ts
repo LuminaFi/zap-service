@@ -289,7 +289,7 @@ export class TransactionHistoryService {
     const blockNumber = tx.block ? parseInt(tx.block) : 0;
 
     return {
-      hash: tx.hash,
+      hash: tx.block_hash,
       from: fromAddress,
       to: toAddress,
       value: valueInWei,
