@@ -46,6 +46,7 @@ export interface ParsedTransaction {
   isContractInteraction: boolean;
   functionName: string | null;
   methodId: string | null;
+  valueInIDR: number | null;
 }
 
 /**
@@ -105,7 +106,7 @@ export class TransactionHistoryService {
       const {
         page = 1,
         limit = 20,
-        filterBy = "all",
+        filterBy = "to",
         startDate,
         endDate,
         sort = "desc",
@@ -124,6 +125,7 @@ export class TransactionHistoryService {
         page,
         limit,
         sort_order: sort,
+        token: process.env.IDRX_TOKEN_ADDRESS || '0x140fb356730a7f2D018849a14773c02C0869DEAa'
       };
 
       if (startDate) {
@@ -261,9 +263,9 @@ export class TransactionHistoryService {
     const valueInEther = this.weiToEther(valueInWei);
 
     const timestamp = tx.timestamp
-      ? parseInt(tx.timestamp)
-      : Math.floor(Date.now() / 1000);
-    const date = new Date(timestamp * 1000);
+      ? tx.timestamp
+      : Date.now();
+    const date = new Date(timestamp);
 
     let status: "success" | "error" | "pending" = "pending";
     if (tx.status === "ok" || tx.status === "success" || tx.status === true) {
@@ -301,6 +303,7 @@ export class TransactionHistoryService {
       isContractInteraction,
       functionName: tx.method || null,
       methodId,
+      valueInIDR: tx.total.value,
     };
   }
 
