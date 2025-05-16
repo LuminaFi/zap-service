@@ -220,7 +220,7 @@ export class TransactionHistoryService {
     try {
       const formattedTxHash = txHash.startsWith("0x") ? txHash : `0x${txHash}`;
 
-      const endpoint = `${this.BLOCKSCOUT_API_URL}/transactions/${formattedTxHash}`;
+      const endpoint = `${this.BLOCKSCOUT_API_URL}/transactions/${formattedTxHash}/token-transfers`;
 
       const response = await axios.get(endpoint, {
         timeout: 10000,
@@ -230,7 +230,7 @@ export class TransactionHistoryService {
         throw new ServiceError(`Transaction not found: ${txHash}`, 404);
       }
 
-      return this.parseTransactionV2(response.data);
+      return this.parseTransactionV2(response.data.items[0]);
     } catch (error) {
       console.error("Error fetching transaction by hash:", error);
 
